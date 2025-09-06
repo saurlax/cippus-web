@@ -2,9 +2,17 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  modules: ["@nuxt/ui"],
-  css: ["~/assets/css/main.css"],
+  modules: ["@nuxt/ui", "nuxt-auth-utils"],
+  appConfig: {
+    name: "创新创业实践中心",
+    description:
+      "Sci-tech innovation system for teams, competitions, and awards.",
+  },
   ui: {
     fonts: false,
+  },
+  routeRules: {
+    "/": { swr: 3600 },
+    "/**": { ssr: false },
   },
 });
