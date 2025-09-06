@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     fonts: false,
   },
   routeRules: {
-    "/": { swr: 3600 },
+    "/": { isr: 3600 },
     "/**": { ssr: false },
   },
 });
