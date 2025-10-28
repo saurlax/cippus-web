@@ -44,24 +44,55 @@ model Contest {
   updatedAt   DateTime @updatedAt
 }
 
-model Reward {
-  id        Int     @id @default(autoincrement())
-  userId    Int
-  contestId Int
-  level     Int // 参赛级别：1-院级，2-校级，3-省级，4-国家级
-  name      String? // 奖项名称
+enum ReviewStatus {
+  draft
+  pending
+  approved
+  rejected
+}
 
-  type         Int? // 奖项类型：1-一等奖，2-二等奖，3-三等奖，4-优秀奖
-  rank         Int? // 名次
-  order        Int? // 对内排序
-  verified     Boolean       @default(false)
-  applications Application[]
+enum RewardLevel {
+  national
+  provincial
+  university
+  college
+}
+
+enum RewardType {
+  teamFirstPrize
+  teamSecondPrize
+  teamThirdPrize
+  individual1nd
+  individual2nd
+  individual3rd
+  individual4th
+  individual5th
+  individual6th
+}
+
+model Reward {
+  id           Int           @id @default(autoincrement())
+  userId       Int
+  contestId    Int
+  level        RewardLevel
+  type         RewardType
+  status       ReviewStatus  @default(draft)
   updatedAt    DateTime      @updatedAt
+  applications Application[]
+}
+
+model Activity {
+  id           Int           @id @default(autoincrement())
+  applications Application[]
 }
 
 model Application {
-  id       Int    @id @default(autoincrement())
-  userId   Int
-  rewardId Int
-  reward   Reward @relation(fields: [rewardId], references: [id])
+  id         Int          @id @default(autoincrement())
+  activityId Int
+  rewardId   Int
+  activity   Activity     @relation(fields: [activityId], references: [id])
+  reward     Reward       @relation(fields: [rewardId], references: [id])
+  status     ReviewStatus @default(draft)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 }

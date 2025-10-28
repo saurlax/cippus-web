@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const appConfig = useAppConfig();
+const { loggedIn } = useUserSession();
 
-const items = ref([
+const navItems = ref([
   {
     label: "通知",
     to: "/notices",
@@ -12,9 +13,20 @@ const items = ref([
   },
   {
     label: "申报",
-    to: "/app",
+    to: "/activities",
   },
 ]);
+
+const userItems = computed(() => {
+  if (loggedIn.value) {
+    return [
+      { label: "个人中心", to: "/profile" },
+      { label: "注销登录", to: "/logout" },
+    ];
+  } else {
+    return [{ label: "登录", to: "/login" }];
+  }
+});
 </script>
 
 <template>
@@ -22,9 +34,11 @@ const items = ref([
     <template #title>
       <img src="/logo.svg" alt="logo" class="h-8" />
     </template>
-    <UNavigationMenu :items="items" />
+    <UNavigationMenu :items="navItems" />
     <template #right>
-      <UAvatar icon="i-lucide-user-round" />
+      <UDropdownMenu :items="userItems">
+        <UAvatar icon="i-lucide-user-round" />
+      </UDropdownMenu>
     </template>
   </UHeader>
   <UMain>
