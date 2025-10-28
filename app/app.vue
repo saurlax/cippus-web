@@ -4,20 +4,6 @@ useHead({
   titleTemplate: (title) =>
     title ? `${title} - ${appConfig.title}` : appConfig.title,
 });
-
-onMounted(() => {
-  console.log(
-    String.raw`%c
-███╗   ██╗ █████╗  ██████╗ ███████╗██╗
-████╗  ██║██╔══██╗██╔═══██╗██╔════╝██║
-██╔██╗ ██║███████║██║   ██║███████╗██║
-██║╚██╗██║██╔══██║██║   ██║╚════██║██║
-██║ ╚████║██║  ██║╚██████╔╝███████║██║
-╚═╝  ╚═══╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝`,
-    "color: green;"
-  );
-  console.log("Powered by NAOSI-DLUT. https://naosi.org/");
-});
 </script>
 
 <template>
