@@ -5,7 +5,7 @@ const links = ref([{ label: "登录", to: "/login" }]);
 
 <template>
   <UPageCTA
-    :title="appConfig.name"
+    :title="appConfig.title"
     :description="appConfig.description"
     :links="links"
     orientation="horizontal"

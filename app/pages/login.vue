@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const providers = ref([
   {
-    label: "SSO",
+    label: "CAS",
     icon: "i-lucide-log-in",
   },
 ]);

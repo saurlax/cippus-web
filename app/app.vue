@@ -2,7 +2,7 @@
 const appConfig = useAppConfig();
 useHead({
   titleTemplate: (title) =>
-    title ? `${title} - ${appConfig.name}` : appConfig.name,
+    title ? `${title} - ${appConfig.title}` : appConfig.title,
 });
 
 onMounted(() => {

@@ -11,8 +11,8 @@ const items = ref([
     to: "/contests",
   },
   {
-    label: "群组",
-    to: "/groups",
+    label: "申报",
+    to: "/app",
   },
 ]);
 </script>
@@ -34,7 +34,7 @@ const items = ref([
   <UFooter>
     <template #left>
       <p class="text-muted text-sm">
-        Copyright © {{ new Date().getFullYear() }} {{ appConfig.name }}.
+        Copyright © {{ new Date().getFullYear() }} {{ appConfig.title }}.
       </p>
     </template>
   </UFooter>

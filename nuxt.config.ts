@@ -2,9 +2,10 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  modules: ["@nuxt/ui", "nuxt-auth-utils"],
+  modules: ["@nuxt/ui", "nuxt-auth-utils", "nuxt-authorization"],
   appConfig: {
-    name: "创新创业实践中心",
+    site: "https://cippus.naosi.org",
+    title: "创新创业实践中心",
     description:
       "Sci-tech innovation system for teams, competitions, and awards.",
   },

@@ -13,3 +13,55 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id        Int      @id @default(autoincrement())
+  studentId String?  @unique
+  name      String
+  email     String   @unique
+  gender    String?
+  college   String?
+  role      String?
+  createdAt DateTime @default(now())
+}
+
+model Notice {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contest {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Reward {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  contestId Int
+  level     Int // 参赛级别：1-院级，2-校级，3-省级，4-国家级
+  name      String? // 奖项名称
+
+  type         Int? // 奖项类型：1-一等奖，2-二等奖，3-三等奖，4-优秀奖
+  rank         Int? // 名次
+  order        Int? // 对内排序
+  verified     Boolean       @default(false)
+  applications Application[]
+  updatedAt    DateTime      @updatedAt
+}
+
+model Application {
+  id       Int    @id @default(autoincrement())
+  userId   Int
+  rewardId Int
+  reward   Reward @relation(fields: [rewardId], references: [id])
+}
