@@ -1,6 +1,11 @@
 <script setup lang="ts">
 const appConfig = useAppConfig();
-const links = ref([{ label: "登录", to: "/login" }]);
+const { loggedIn } = useUserSession();
+const links = computed(() => {
+  if (!loggedIn.value) {
+    return [{ label: "登录", to: "/login" }];
+  }
+});
 </script>
 
 <template>

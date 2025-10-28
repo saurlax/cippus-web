@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const appConfig = useAppConfig();
-const { loggedIn } = useUserSession();
+const { loggedIn, clear } = useUserSession();
 
 const navItems = ref([
   {
@@ -21,10 +21,15 @@ const userItems = computed(() => {
   if (loggedIn.value) {
     return [
       { label: "个人中心", to: "/profile" },
-      { label: "注销登录", to: "/logout" },
+      { label: "注销登录", onSelect: clear },
     ];
   } else {
-    return [{ label: "登录", to: "/login" }];
+    return [
+      {
+        label: "登录",
+        to: "/login",
+      },
+    ];
   }
 });
 </script>

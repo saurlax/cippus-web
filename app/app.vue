@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { zh_cn } from "@nuxt/ui/locale";
 const appConfig = useAppConfig();
 useHead({
   titleTemplate: (title) =>
@@ -7,7 +8,7 @@ useHead({
 </script>
 
 <template>
-  <UApp>
+  <UApp :locale="zh_cn">
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
