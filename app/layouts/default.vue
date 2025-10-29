@@ -1,21 +1,30 @@
 <script setup lang="ts">
 const appConfig = useAppConfig();
-const { loggedIn, clear } = useUserSession();
+const { loggedIn, user, clear } = useUserSession();
 
-const navItems = ref([
-  {
-    label: "通知",
-    to: "/notices",
-  },
-  {
-    label: "赛事",
-    to: "/contests",
-  },
-  {
-    label: "申报",
-    to: "/activities",
-  },
-]);
+const navItems = computed(() => {
+  const links = [
+    {
+      label: "通知",
+      to: "/notices",
+    },
+    {
+      label: "赛事",
+      to: "/contests",
+    },
+    {
+      label: "申报",
+      to: "/activities",
+    },
+  ];
+  if (user.value?.admin) {
+    links.push({
+      label: "管理后台",
+      to: "/admin/notices",
+    });
+  }
+  return links;
+});
 
 const userItems = computed(() => {
   if (loggedIn.value) {

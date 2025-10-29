@@ -15,13 +15,14 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String?
-  name      String?
-  email     String?
-  gender    String?
-  college   String?
+  id       Int     @id @default(autoincrement())
+  username String  @unique
+  password String?
+  name     String?
+  email    String?
+  gender   String?
+  college  String?
+  admin    Boolean @default(false)
 }
 
 model Notice {
