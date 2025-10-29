@@ -16,13 +16,12 @@ datasource db {
 
 model User {
   id        Int      @id @default(autoincrement())
-  studentId String?  @unique
-  name      String
-  email     String   @unique
+  username  String   @unique
+  password  String?
+  name      String?
+  email     String?
   gender    String?
   college   String?
-  role      String?
-  createdAt DateTime @default(now())
 }
 
 model Notice {

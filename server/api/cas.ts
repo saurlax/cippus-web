@@ -8,6 +8,14 @@ export default defineEventHandler(async (event) => {
   const name = rawXml.match(/<cas:USER_NAME>([^<]+)<\/cas:USER_NAME>/)?.[1];
   if (username) {
     await setUserSession(event, { user: { username } });
+    if (!(await prisma.user.count({ where: { username } }))) {
+      await prisma.user.create({
+        data: {
+          username,
+          name,
+        },
+      });
+    }
     return sendRedirect(event, "/");
   }
   sendRedirect(event, "/login");
