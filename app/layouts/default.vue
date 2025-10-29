@@ -5,7 +5,7 @@ const { loggedIn, user, clear } = useUserSession();
 const navItems = computed(() => {
   const links = [
     {
-      label: "通知",
+      label: "公告",
       to: "/notices",
     },
     {
@@ -20,7 +20,7 @@ const navItems = computed(() => {
   if (user.value?.admin) {
     links.push({
       label: "管理后台",
-      to: "/admin/notices",
+      to: "/admin",
     });
   }
   return links;
@@ -46,13 +46,16 @@ const userItems = computed(() => {
 <template>
   <UHeader>
     <template #title>
-      <img src="/logo.svg" alt="logo" class="h-8" />
+        <Logo />
     </template>
     <UNavigationMenu :items="navItems" />
     <template #right>
       <UDropdownMenu :items="userItems">
         <UAvatar icon="i-lucide-user-round" />
       </UDropdownMenu>
+    </template>
+    <template #body>
+      <UNavigationMenu :items="navItems" orientation="vertical" />
     </template>
   </UHeader>
   <UMain>
