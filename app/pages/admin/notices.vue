@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Notice } from "@prisma/client";
+const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
 definePageMeta({
@@ -14,9 +15,29 @@ const columns = [
   { accessorKey: "createdAt", header: "创建时间" },
   { accessorKey: "updatedAt", header: "更新时间" },
   {
-    accessorKey: "id",
-    cell: ({ row }) => {
-      return h(UButton);
+    id: "actions",
+    cell: ({ row }: any) => {
+      return h(
+        UDropdownMenu,
+        {
+          items: [
+            {
+              label: "编辑公告",
+              onClick: () => {
+                currentNotice.value = row.original;
+                openModal.value = true;
+              },
+            },
+          ],
+        },
+        () => {
+          return h(UButton, {
+            icon: "i-lucide-ellipsis-vertical",
+            color: "neutral",
+            variant: "ghost",
+          });
+        }
+      );
     },
   },
 ];
@@ -40,21 +61,18 @@ async function updateNotice() {
   const notice = currentNotice.value;
   if (notice) {
     if (notice.id) {
-      notices.value?.push(
-        await $fetch<any>(`/api/admin/notices/${notice.id}`, {
-          method: "PUT",
-          body: notice,
-        })
-      );
+      await $fetch<any>(`/api/admin/notices/${notice.id}`, {
+        method: "PUT",
+        body: notice,
+      });
     } else {
-      notices.value?.push(
-        await $fetch<any>(`/api/admin/notices`, {
-          method: "POST",
-          body: notice,
-        })
-      );
+      await $fetch<any>(`/api/admin/notices`, {
+        method: "POST",
+        body: notice,
+      });
     }
   }
+  notices.value = await $fetch<any>("/api/admin/notices");
   openModal.value = false;
 }
 </script>
@@ -66,8 +84,8 @@ async function updateNotice() {
     </template>
   </UDashboardNavbar>
   <UTable :data="notices" :columns />
-  <UModal :open="openModal" title="编辑公告">
-    <template #content>
+  <UModal v-model:open="openModal" title="编辑公告">
+    <template #body>
       <UForm class="flex flex-col gap-2" @submit="updateNotice">
         <UFormField label="标题" name="title" required>
           <UInput
@@ -90,10 +108,10 @@ async function updateNotice() {
             placeholder="请输入公告内容"
           />
         </UFormField>
-        <UFormField>
-          <UButton type="submit" color="primary">提交</UButton>
-        </UFormField>
       </UForm>
+    </template>
+    <template #footer>
+      <UButton @click="updateNotice">提交</UButton>
     </template>
   </UModal>
 </template>

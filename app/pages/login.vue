@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { AuthFormProps, FormSubmitEvent } from "@nuxt/ui";
+const { fetch } = useUserSession();
 const appConfig = useAppConfig();
+const toast = useToast();
 const providers = ref([
   {
     label: "通过统一身份认证登录",
@@ -13,20 +15,27 @@ const fields = ref<AuthFormProps["fields"]>([
   {
     name: "username",
     type: "text",
-    label: "Username",
+    label: "用户名",
   },
   {
     name: "password",
     type: "password",
-    label: "Password",
+    label: "密码",
   },
 ]);
 
-function login(payload: FormSubmitEvent<typeof fields.value>) {
+function login(payload: FormSubmitEvent<any>) {
   $fetch("/api/login", {
     method: "POST",
-    body: JSON.stringify(payload),
-  });
+    body: payload.data,
+  })
+    .catch((err) => {
+      toast.add({ title: err, color: "error" });
+    })
+    .then(async () => {
+      await fetch();
+      navigateTo("/");
+    });
 }
 </script>
 
