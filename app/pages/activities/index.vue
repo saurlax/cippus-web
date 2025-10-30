@@ -6,9 +6,9 @@ const { data: activities } = await useFetch("/api/activities");
 const posts = computed(() => {
   return activities.value?.map((activity) => {
     return {
-      title: `活动 #${activity.id}`,
-      description: "",
-      date: String(activity.id),
+      title: activity.name,
+      description: activity.description || "",
+      date: activity.startDate,
     };
   });
 });

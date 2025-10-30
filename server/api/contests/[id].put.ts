@@ -6,9 +6,7 @@ export default defineEventHandler(async (event) => {
     where: { id },
     data: {
       title: body.title,
-      description: body.description,
-      startTime: body.startTime,
-      endTime: body.endTime
+      description: body.description
     }
   })
 })

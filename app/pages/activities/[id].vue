@@ -13,13 +13,21 @@ const links = [{
   <UContainer>
     <UPageHeader 
       v-if="activity"
-      :title="`活动 #${activity.id}`" 
+      :title="activity.name" 
       :links="links"
-    />
+    >
+      <template #description v-if="activity.startDate || activity.endDate">
+        <div class="flex gap-2 text-sm text-gray-500">
+          <span v-if="activity.startDate">开始: {{ new Date(activity.startDate).toLocaleDateString() }}</span>
+          <span v-if="activity.endDate">结束: {{ new Date(activity.endDate).toLocaleDateString() }}</span>
+        </div>
+      </template>
+    </UPageHeader>
     
     <UPage v-if="activity">
       <UPageBody prose>
-        <UAlert color="neutral" variant="soft" title="活动详情" />
+        <div v-if="activity.description" v-html="activity.description" />
+        <UAlert v-else color="neutral" variant="soft" title="暂无内容" />
       </UPageBody>
     </UPage>
     

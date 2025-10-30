@@ -12,8 +12,6 @@ const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "title", header: "标题" },
   { accessorKey: "description", header: "描述" },
-  { accessorKey: "startTime", header: "开始时间" },
-  { accessorKey: "endTime", header: "结束时间" },
   { accessorKey: "createdAt", header: "创建时间" },
   { accessorKey: "updatedAt", header: "更新时间" },
   {
@@ -47,8 +45,6 @@ const openModal = ref(false);
 const currentContest = ref<Partial<Contest>>({
   title: "",
   description: "",
-  startTime: new Date(),
-  endTime: new Date(),
 });
 
 function createContest() {
@@ -56,8 +52,6 @@ function createContest() {
   currentContest.value = {
     title: "",
     description: "",
-    startTime: new Date(),
-    endTime: new Date(),
   };
 }
 
@@ -103,20 +97,6 @@ async function updateContest() {
             class="w-full"
             v-model="currentContest.description"
             placeholder="请输入赛事描述"
-          />
-        </UFormField>
-        <UFormField label="开始时间" name="startTime" required>
-          <UInput
-            class="w-full"
-            type="date"
-            v-model="currentContest.startTime as any"
-          />
-        </UFormField>
-        <UFormField label="结束时间" name="endTime" required>
-          <UInput
-            class="w-full"
-            type="date"
-            v-model="currentContest.endTime as any"
           />
         </UFormField>
       </UForm>

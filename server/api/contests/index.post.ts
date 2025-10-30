@@ -4,9 +4,7 @@ export default defineEventHandler(async (event) => {
   return await prisma.contest.create({
     data: {
       title: body.title,
-      description: body.description,
-      startTime: body.startTime,
-      endTime: body.endTime
+      description: body.description
     }
   })
 })

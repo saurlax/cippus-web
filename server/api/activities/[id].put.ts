@@ -4,6 +4,11 @@ export default defineEventHandler(async (event) => {
   
   return await prisma.activity.update({
     where: { id },
-    data: body
+    data: {
+      name: body.name,
+      description: body.description,
+      startDate: new Date(body.startDate),
+      endDate: new Date(body.endDate)
+    }
   })
 })
