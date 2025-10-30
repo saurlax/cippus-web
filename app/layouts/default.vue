@@ -20,7 +20,7 @@ const navItems = computed(() => {
   if (user.value?.admin) {
     links.push({
       label: "管理后台",
-      to: "/admin",
+      to: "/admin/notices",
     });
   }
   return links;
@@ -46,7 +46,7 @@ const userItems = computed(() => {
 <template>
   <UHeader>
     <template #title>
-        <Logo />
+      <Logo />
     </template>
     <UNavigationMenu :items="navItems" />
     <template #right>

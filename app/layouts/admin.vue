@@ -11,6 +11,24 @@ const items = [
     to: "/admin/notices",
     value: "notices",
   },
+  {
+    label: "赛事管理",
+    icon: "i-lucide-trophy",
+    to: "/admin/contests",
+    value: "contests",
+  },
+  {
+    label: "申报管理",
+    icon: "i-lucide-activity",
+    to: "/admin/activities",
+    value: "activities",
+  },
+  {
+    label: "用户管理",
+    icon: "i-lucide-users",
+    to: "/admin/users",
+    value: "users",
+  },
 ];
 </script>
 
