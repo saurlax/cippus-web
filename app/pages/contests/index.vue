@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import dayjs from "dayjs";
-
 const { data: contests } = await useFetch("/api/contests");
 
 const posts = computed(() => {
@@ -9,6 +7,7 @@ const posts = computed(() => {
       title: contest.title,
       description: contest.description || "",
       date: contest.createdAt,
+      to: `/contests/${contest.id}`,
     };
   });
 });

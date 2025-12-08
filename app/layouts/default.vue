@@ -29,8 +29,8 @@ const navItems = computed(() => {
 const userItems = computed(() => {
   if (loggedIn.value) {
     return [
-      { label: "个人中心", to: "/profile" },
-      { label: "注销登录", onSelect: clear },
+      { label: "个人中心", to: `/users/${user.value?.username}` },
+      { label: "退出登录", onSelect: clear },
     ];
   } else {
     return [
@@ -51,7 +51,7 @@ const userItems = computed(() => {
     <UNavigationMenu :items="navItems" />
     <template #right>
       <UDropdownMenu :items="userItems">
-        <UAvatar icon="i-lucide-user-round" />
+        <UAvatar class="cursor-pointer" icon="i-lucide-user-round" text="1" />
       </UDropdownMenu>
     </template>
     <template #body>

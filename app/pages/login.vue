@@ -29,12 +29,14 @@ function login(payload: FormSubmitEvent<any>) {
     method: "POST",
     body: payload.data,
   })
-    .catch((err) => {
-      toast.add({ title: err, color: "error" });
-    })
     .then(async () => {
       await fetch();
       navigateTo("/");
+    })
+    .catch((err) => {
+      console.log(err);
+      
+      toast.add({ title: err.toString(), color: "error" });
     });
 }
 </script>

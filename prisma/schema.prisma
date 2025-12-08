@@ -49,14 +49,14 @@ enum ReviewStatus {
   rejected
 }
 
-enum RewardLevel {
+enum AwardLevel {
   national
   provincial
   university
   college
 }
 
-enum RewardType {
+enum AwardType {
   teamFirstPrize
   teamSecondPrize
   teamThirdPrize
@@ -68,12 +68,12 @@ enum RewardType {
   individual6th
 }
 
-model Reward {
+model Award {
   id           Int           @id @default(autoincrement())
   userId       Int
   contestId    Int
-  level        RewardLevel
-  type         RewardType
+  level        AwardLevel
+  type         AwardType
   status       ReviewStatus  @default(draft)
   updatedAt    DateTime      @updatedAt
   applications Application[]
@@ -91,9 +91,9 @@ model Activity {
 model Application {
   id         Int          @id @default(autoincrement())
   activityId Int
-  rewardId   Int
+  awardId    Int
   activity   Activity     @relation(fields: [activityId], references: [id])
-  reward     Reward       @relation(fields: [rewardId], references: [id])
+  award      Award        @relation(fields: [awardId], references: [id])
   status     ReviewStatus @default(draft)
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt

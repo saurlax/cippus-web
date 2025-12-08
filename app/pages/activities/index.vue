@@ -9,6 +9,7 @@ const posts = computed(() => {
       title: activity.name,
       description: activity.description || "",
       date: activity.startDate,
+      to: `/activities/${activity.id}`,
     };
   });
 });
@@ -16,7 +17,7 @@ const posts = computed(() => {
 
 <template>
   <UContainer>
-    <UPageHeader title="活动列表" />
+    <UPageHeader title="申报列表" />
     <UBlogPosts :posts />
   </UContainer>
 </template>

@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import dayjs from "dayjs";
-
 const { data: notices } = await useFetch("/api/notices");
 
 const posts = computed(() => {
   return notices.value?.map((notice) => {
     return {
       title: notice.title,
-      description: notice.content,
+      description: notice.content.slice(0, 100) + "...",
       date: notice.createdAt,
+      to: `/notices/${notice.id}`,
     };
   });
 });

@@ -1,35 +1,27 @@
 <script setup lang="ts">
-const route = useRoute()
-const { data: notice } = await useFetch<any>(`/api/notices/${route.params.id}`)
+const route = useRoute();
+const { data: notice } = await useFetch(`/api/notices/${route.params.id}`);
+if (!notice.value) {
+  throw createError({ statusCode: 404 });
+}
 
-const links = [{
-  label: '返回列表',
-  icon: 'i-heroicons-arrow-left',
-  to: '/notices'
-}]
+const links = [
+  {
+    label: "返回列表",
+    icon: "i-heroicons-arrow-left",
+    to: "/notices",
+  },
+];
 </script>
 
 <template>
-  <UContainer>
-    <UPageHeader 
-      v-if="notice"
-      :title="notice.title" 
-      :links="links"
-    >
-      <template #description v-if="notice.category">
-        <UBadge color="primary" variant="soft">
-          {{ notice.category }}
-        </UBadge>
-      </template>
-    </UPageHeader>
-    
-    <UPage v-if="notice">
+  <UContainer v-if="notice">
+    <UPageHeader headline="公告" :title="notice.title" :links="links" />
+
+    <UPage>
       <UPageBody prose>
-        <div v-if="notice.content" v-html="notice.content" />
-        <UAlert v-else color="neutral" variant="soft" title="暂无内容" />
+        <MDC :value="notice.content" />
       </UPageBody>
     </UPage>
-    
-    <UAlert v-else color="error" variant="soft" title="公告不存在" />
   </UContainer>
 </template>
