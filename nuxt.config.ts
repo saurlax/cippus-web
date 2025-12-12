@@ -16,7 +16,11 @@ export default defineNuxtConfig({
     fonts: false,
   },
   routeRules: {
-    "/": { isr: 3600 },
-    "/**": { ssr: false },
+    "/": { prerender: true },
+    "/activities": { isr: 3600 },
+    "/contests": { isr: 3600 },
+    "/notices": { isr: 3600 },
+    "/users": { isr: 3600 },
+    "/admin/**": { ssr: false },
   },
 });
