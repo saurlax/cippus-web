@@ -11,7 +11,9 @@ export default defineEventHandler(async (event) => {
     if (!user) {
       await prisma.user.create({ data: { username, name } });
     }
-    await setUserSession(event, { user: { username, admin: user?.admin } });
+    await setUserSession(event, {
+      user: { username, name, admin: user?.admin },
+    });
     return sendRedirect(event, "/");
   }
   sendRedirect(event, "/login");

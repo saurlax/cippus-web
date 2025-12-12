@@ -19,7 +19,7 @@ const links = [
     <UPageHeader headline="公告" :title="notice.title" :links="links" />
 
     <UPage>
-      <UPageBody prose>
+      <UPageBody>
         <MDC :value="notice.content" />
       </UPageBody>
     </UPage>

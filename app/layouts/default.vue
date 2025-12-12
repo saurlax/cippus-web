@@ -51,7 +51,14 @@ const userItems = computed(() => {
     <UNavigationMenu :items="navItems" />
     <template #right>
       <UDropdownMenu :items="userItems">
-        <UAvatar class="cursor-pointer" icon="i-lucide-user-round" text="1" />
+        <div>
+          <UAvatar
+            v-if="loggedIn && user?.name"
+            class="cursor-pointer"
+            :text="user.name?.[0]"
+          />
+          <UAvatar v-else class="cursor-pointer" icon="i-lucide-user-round" />
+        </div>
       </UDropdownMenu>
     </template>
     <template #body>
