@@ -7,15 +7,16 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare && prisma generate --no-engine"
+    "postinstall": "nuxt prepare",
+    "supabase:start": "supabase start",
+    "supabase:gen": "supabase gen types typescript --local > app/types/database.types.ts"
   },
   "dependencies": {
     "@nuxt/ui": "^4.2.1",
     "@nuxtjs/mdc": "^0.19.1",
-    "@prisma/client": "^6.18.0",
+    "@nuxtjs/supabase": "2.0.3",
     "dayjs": "^1.11.19",
     "nuxt": "^4.2.1",
-    "nuxt-auth-utils": "0.5.25",
     "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3",
     "vue": "^3.5.25",
@@ -23,7 +24,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
-    "prisma": "^6.18.0"
+    "supabase": "^2.67.3"
   },
-  "packageManager": "pnpm@10.24.0"
+  "packageManager": "pnpm@10.26.1"
 }

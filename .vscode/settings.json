@@ -1,13 +1,41 @@
 {
-  "files.associations": {
-    "*.css": "tailwindcss"
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
   },
+  "deno.enablePaths": [
+    "supabase/functions"
+  ],
+  "deno.lint": true,
+  "deno.unstable": [
+    "bare-node-builtins",
+    "byonm",
+    "sloppy-imports",
+    "unsafe-proto",
+    "webgpu",
+    "broadcast-channel",
+    "worker-options",
+    "cron",
+    "kv",
+    "ffi",
+    "fs",
+    "http",
+    "net"
+  ],
   "editor.quickSuggestions": {
     "strings": "on"
   },
-  "tailwindCSS.classAttributes": ["class", "ui"],
-  "tailwindCSS.experimental.classRegex": [
-    ["ui:\\s*{([^)]*)\\s*}", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "prisma.pinToPrisma6": true,
+  "tailwindCSS.classAttributes": [
+    "class",
+    "ui"
   ],
-  "prisma.pinToPrisma6": true
+  "tailwindCSS.experimental.classRegex": [
+    [
+      "ui:\\s*{([^)]*)\\s*}",
+      "(?:'|\"|`)([^']*)(?:'|\"|`)"
+    ]
+  ]
 }
