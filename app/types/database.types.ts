@@ -34,7 +34,126 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      awards: {
+        Row: {
+          contest_id: number
+          created_at: string | null
+          id: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contest_id: number
+          created_at?: string | null
+          id?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contest_id?: number
+          created_at?: string | null
+          id?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "awards_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "awards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contests: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      notices: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string | null
+          id: number
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string | null
+          id?: number
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          id?: number
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          bio: string | null
+          college: string | null
+          created_at: string | null
+          gender: string | null
+          id: string
+          name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bio?: string | null
+          college?: string | null
+          created_at?: string | null
+          gender?: string | null
+          id: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bio?: string | null
+          college?: string | null
+          created_at?: string | null
+          gender?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
