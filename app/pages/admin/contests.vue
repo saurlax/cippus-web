@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Contest } from "@prisma/client";
+import type { Database } from "~/types/database.types";
+
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
@@ -7,7 +8,44 @@ definePageMeta({
   layout: "admin",
 });
 
-const { data: contests } = await useFetch("/api/admin/contests");
+type Contest = {
+  id?: number;
+  title: string;
+  description: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+const supabase = useSupabaseClient<Database>();
+const toast = useToast();
+
+const emptyContest = (): Contest => ({
+  title: "",
+  description: "",
+  createdAt: null,
+  updatedAt: null,
+});
+
+const { data: contests, refresh: refreshContests } =
+  await useAsyncData<Contest[]>("admin-contests", async () => {
+    const { data, error } = await supabase
+      .from("contests")
+      .select("id, title, description, created_at, updated_at")
+      .order("id", { ascending: false });
+
+    if (error) {
+      throw createError({ statusCode: 500, statusMessage: error.message });
+    }
+
+    return (data ?? []).map((contest) => ({
+      id: contest.id,
+      title: contest.title,
+      description: contest.description,
+      createdAt: contest.created_at,
+      updatedAt: contest.updated_at,
+    }));
+  });
+
 const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "title", header: "标题" },
@@ -16,61 +54,58 @@ const columns = [
   { accessorKey: "updatedAt", header: "更新时间" },
   {
     id: "actions",
-    cell: ({ row }: any) => {
-      return h(
+    cell: ({ row }: any) =>
+      h(
         UDropdownMenu,
         {
           items: [
             {
               label: "编辑赛事",
               onClick: () => {
-                currentContest.value = row.original;
+                currentContest.value = { ...row.original };
                 openModal.value = true;
               },
             },
           ],
         },
-        () => {
-          return h(UButton, {
+        () =>
+          h(UButton, {
             icon: "i-lucide-ellipsis-vertical",
             color: "neutral",
             variant: "ghost",
-          });
-        }
-      );
-    },
+          })
+      ),
   },
 ];
+
 const openModal = ref(false);
-const currentContest = ref<Partial<Contest>>({
-  title: "",
-  description: "",
-});
+const currentContest = ref<Contest>(emptyContest());
 
 function createContest() {
+  currentContest.value = emptyContest();
   openModal.value = true;
-  currentContest.value = {
-    title: "",
-    description: "",
-  };
 }
 
 async function updateContest() {
   const contest = currentContest.value;
-  if (contest) {
-    if (contest.id) {
-      await $fetch<any>(`/api/admin/contests/${contest.id}`, {
-        method: "PUT",
-        body: contest,
-      });
-    } else {
-      await $fetch<any>(`/api/admin/contests`, {
-        method: "POST",
-        body: contest,
-      });
-    }
+  if (!contest) return;
+
+  const payload = {
+    title: contest.title,
+    description: contest.description,
+    updated_at: new Date().toISOString(),
+  } satisfies Database["public"]["Tables"]["contests"]["Insert"];
+
+  const { error } = contest.id
+    ? await supabase.from("contests").update(payload).eq("id", contest.id)
+    : await supabase.from("contests").insert([payload]);
+
+  if (error) {
+    toast.add({ title: error.message, color: "error" });
+    return;
   }
-  contests.value = await $fetch<any>("/api/admin/contests");
+
+  await refreshContests();
   openModal.value = false;
 }
 </script>

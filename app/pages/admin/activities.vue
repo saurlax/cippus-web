@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Activity } from "@prisma/client";
+import type { Database } from "~/types/database.types";
+
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
@@ -7,7 +8,45 @@ definePageMeta({
   layout: "admin",
 });
 
-const { data: activities } = await useFetch("/api/admin/activities");
+type Activity = {
+  id?: number;
+  name: string;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+};
+
+const supabase = useSupabaseClient<Database>();
+const toast = useToast();
+
+const today = () => new Date().toISOString().slice(0, 10);
+const emptyActivity = (): Activity => ({
+  name: "",
+  description: "",
+  startDate: today(),
+  endDate: today(),
+});
+
+const { data: activities, refresh: refreshActivities } =
+  await useAsyncData<Activity[]>("admin-activities", async () => {
+    const { data, error } = await supabase
+      .from("activities")
+      .select("id, name, description, start_date, end_date")
+      .order("id", { ascending: false });
+
+    if (error) {
+      throw createError({ statusCode: 500, statusMessage: error.message });
+    }
+
+    return (data ?? []).map((activity) => ({
+      id: activity.id,
+      name: activity.name,
+      description: activity.description,
+      startDate: activity.start_date,
+      endDate: activity.end_date,
+    }));
+  });
+
 const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "name", header: "名称" },
@@ -16,65 +55,62 @@ const columns = [
   { accessorKey: "endDate", header: "结束日期" },
   {
     id: "actions",
-    cell: ({ row }: any) => {
-      return h(
+    cell: ({ row }: any) =>
+      h(
         UDropdownMenu,
         {
           items: [
             {
               label: "编辑活动",
               onClick: () => {
-                currentActivity.value = row.original;
+                currentActivity.value = { ...row.original };
                 openModal.value = true;
               },
             },
           ],
         },
-        () => {
-          return h(UButton, {
+        () =>
+          h(UButton, {
             icon: "i-lucide-ellipsis-vertical",
             color: "neutral",
             variant: "ghost",
-          });
-        }
-      );
-    },
+          })
+      ),
   },
 ];
+
 const openModal = ref(false);
-const currentActivity = ref<Partial<Activity>>({
-  name: "",
-  description: "",
-  startDate: new Date(),
-  endDate: new Date(),
-});
+const currentActivity = ref<Activity>(emptyActivity());
 
 function createActivity() {
+  currentActivity.value = emptyActivity();
   openModal.value = true;
-  currentActivity.value = {
-    name: "",
-    description: "",
-    startDate: new Date(),
-    endDate: new Date(),
-  };
 }
 
 async function updateActivity() {
   const activity = currentActivity.value;
-  if (activity) {
-    if (activity.id) {
-      await $fetch<any>(`/api/admin/activities/${activity.id}`, {
-        method: "PUT",
-        body: activity,
-      });
-    } else {
-      await $fetch<any>(`/api/admin/activities`, {
-        method: "POST",
-        body: activity,
-      });
-    }
+  if (!activity) return;
+
+  const payload = {
+    name: activity.name,
+    description: activity.description,
+    start_date: activity.startDate,
+    end_date: activity.endDate,
+  } satisfies Database["public"]["Tables"]["activities"]["Insert"];
+
+  const { error } = activity.id
+    ? await supabase
+        .from("activities")
+        .update(payload)
+        .eq("id", activity.id)
+    : await supabase.from("activities").insert([payload]);
+
+  if (error) {
+    toast.add({ title: error.message, color: "error" });
+    return;
   }
-  activities.value = await $fetch<any>("/api/admin/activities");
+
+  await refreshActivities();
   openModal.value = false;
 }
 </script>
@@ -104,18 +140,10 @@ async function updateActivity() {
           />
         </UFormField>
         <UFormField label="开始日期" name="startDate" required>
-          <UInput
-            class="w-full"
-            type="date"
-            v-model="currentActivity.startDate as any"
-          />
+          <UInput class="w-full" type="date" v-model="currentActivity.startDate" />
         </UFormField>
         <UFormField label="结束日期" name="endDate" required>
-          <UInput
-            class="w-full"
-            type="date"
-            v-model="currentActivity.endDate as any"
-          />
+          <UInput class="w-full" type="date" v-model="currentActivity.endDate" />
         </UFormField>
       </UForm>
     </template>

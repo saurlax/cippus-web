@@ -34,6 +34,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      activities: {
+        Row: {
+          id: number
+          name: string
+          description: string | null
+          start_date: string | null
+          end_date: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          name: string
+          description?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          name?: string
+          description?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       awards: {
         Row: {
           contest_id: number
@@ -126,6 +156,10 @@ export type Database = {
       }
       users: {
         Row: {
+          username: string | null
+          email: string | null
+          admin: boolean | null
+          password: string | null
           bio: string | null
           college: string | null
           created_at: string | null
@@ -135,6 +169,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          username?: string | null
+          email?: string | null
+          admin?: boolean | null
+          password?: string | null
           bio?: string | null
           college?: string | null
           created_at?: string | null
@@ -144,6 +182,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          username?: string | null
+          email?: string | null
+          admin?: boolean | null
+          password?: string | null
           bio?: string | null
           college?: string | null
           created_at?: string | null

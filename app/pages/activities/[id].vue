@@ -1,7 +1,43 @@
 <script setup lang="ts">
+import type { Database } from "~/types/database.types";
+
+type Activity = {
+  id: number;
+  name: string;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+};
+
 const route = useRoute();
-const { data: activity } = await useFetch<any>(
-  `/api/activities/${route.params.id}`
+const supabase = useSupabaseClient<Database>();
+
+const { data: activity } = await useAsyncData<Activity | null>(
+  () => `activity-${route.params.id}`,
+  async () => {
+    const id = Number(route.params.id);
+    const { data, error } = await supabase
+      .from("activities")
+      .select("id, name, description, start_date, end_date")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      throw createError({ statusCode: 500, statusMessage: error.message });
+    }
+
+    if (!data) {
+      throw createError({ statusCode: 404, statusMessage: "活动不存在" });
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      startDate: data.start_date,
+      endDate: data.end_date,
+    };
+  }
 );
 
 const links = [

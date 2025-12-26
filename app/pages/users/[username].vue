@@ -1,9 +1,39 @@
 <script setup lang="ts">
+import type { Database } from "~/types/database.types";
+
+type UserProfile = {
+  id: string;
+  username: string | null;
+  name: string | null;
+  bio: string | null;
+  gender: string | null;
+  college: string | null;
+};
+
 const route = useRoute();
-const { data: user } = await useFetch(`/api/users/${route.params.username}`);
-if (!user.value) {
-  throw createError({ statusCode: 404 });
-}
+const supabase = useSupabaseClient<Database>();
+const identifier = route.params.username as string;
+
+const { data: user } = await useAsyncData<UserProfile | null>(
+  () => `user-${identifier}`,
+  async () => {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, username, name, bio, gender, college")
+      .eq("username", identifier)
+      .maybeSingle();
+
+    if (error) {
+      throw createError({ statusCode: 500, statusMessage: error.message });
+    }
+
+    if (!data) {
+      throw createError({ statusCode: 404, statusMessage: "用户不存在" });
+    }
+
+    return data;
+  }
+);
 </script>
 
 <template>

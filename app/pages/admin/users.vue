@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { User } from "@prisma/client";
+import type { Database } from "~/types/database.types";
+
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
@@ -7,50 +8,21 @@ definePageMeta({
   layout: "admin",
 });
 
-const { data: users } = await useFetch("/api/admin/users");
-const columns = [
-  { accessorKey: "id", header: "#" },
-  { accessorKey: "username", header: "用户名" },
-  { accessorKey: "name", header: "姓名" },
-  { accessorKey: "email", header: "邮箱" },
-  { accessorKey: "gender", header: "性别" },
-  { accessorKey: "college", header: "学院" },
-  { 
-    accessorKey: "admin", 
-    header: "管理员",
-    cell: ({ row }: any) => {
-      return row.original.admin ? "是" : "否";
-    }
-  },
-  {
-    id: "actions",
-    cell: ({ row }: any) => {
-      return h(
-        UDropdownMenu,
-        {
-          items: [
-            {
-              label: "编辑用户",
-              onClick: () => {
-                currentUser.value = row.original;
-                openModal.value = true;
-              },
-            },
-          ],
-        },
-        () => {
-          return h(UButton, {
-            icon: "i-lucide-ellipsis-vertical",
-            color: "neutral",
-            variant: "ghost",
-          });
-        }
-      );
-    },
-  },
-];
-const openModal = ref(false);
-const currentUser = ref<Partial<User>>({
+type UserProfile = {
+  id?: string;
+  username: string | null;
+  password?: string | null;
+  name: string | null;
+  email: string | null;
+  gender: string | null;
+  college: string | null;
+  admin: boolean | null;
+};
+
+const supabase = useSupabaseClient<Database>();
+const toast = useToast();
+
+const emptyUser = (): UserProfile => ({
   username: "",
   password: "",
   name: "",
@@ -60,35 +32,101 @@ const currentUser = ref<Partial<User>>({
   admin: false,
 });
 
+const { data: users, refresh: refreshUsers } = await useAsyncData<UserProfile[]>(
+  "admin-users",
+  async () => {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, username, name, email, gender, college, admin")
+      .order("id", { ascending: true });
+
+    if (error) {
+      throw createError({ statusCode: 500, statusMessage: error.message });
+    }
+
+    return (data ?? []).map((user) => ({
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+      gender: user.gender,
+      college: user.college,
+      admin: user.admin ?? false,
+    }));
+  }
+);
+
+const columns = [
+  { accessorKey: "id", header: "#" },
+  { accessorKey: "username", header: "用户名" },
+  { accessorKey: "name", header: "姓名" },
+  { accessorKey: "email", header: "邮箱" },
+  { accessorKey: "gender", header: "性别" },
+  { accessorKey: "college", header: "学院" },
+  {
+    accessorKey: "admin",
+    header: "管理员",
+    cell: ({ row }: any) => (row.original.admin ? "是" : "否"),
+  },
+  {
+    id: "actions",
+    cell: ({ row }: any) =>
+      h(
+        UDropdownMenu,
+        {
+          items: [
+            {
+              label: "编辑用户",
+              onClick: () => {
+                currentUser.value = { ...row.original };
+                openModal.value = true;
+              },
+            },
+          ],
+        },
+        () =>
+          h(UButton, {
+            icon: "i-lucide-ellipsis-vertical",
+            color: "neutral",
+            variant: "ghost",
+          })
+      ),
+  },
+];
+
+const openModal = ref(false);
+const currentUser = ref<UserProfile>(emptyUser());
+
 function createUser() {
+  currentUser.value = emptyUser();
   openModal.value = true;
-  currentUser.value = {
-    username: "",
-    password: "",
-    name: "",
-    email: "",
-    gender: "",
-    college: "",
-    admin: false,
-  };
 }
 
 async function updateUser() {
   const user = currentUser.value;
-  if (user) {
-    if (user.id) {
-      await $fetch<any>(`/api/admin/users/${user.id}`, {
-        method: "PUT",
-        body: user,
-      });
-    } else {
-      await $fetch<any>(`/api/admin/users`, {
-        method: "POST",
-        body: user,
-      });
-    }
+  if (!user) return;
+
+  const payload = {
+    username: user.username,
+    password: user.password,
+    name: user.name,
+    email: user.email,
+    gender: user.gender,
+    college: user.college,
+    admin: user.admin,
+    updated_at: new Date().toISOString(),
+  } satisfies Database["public"]["Tables"]["users"]["Insert"];
+
+  const { error } = user.id
+    ? await supabase.from("users").update(payload).eq("id", user.id)
+    : await supabase.from("users").insert([payload]);
+
+  if (error) {
+    toast.add({ title: error.message, color: "error" });
+    return;
   }
-  users.value = await $fetch<any>("/api/admin/users");
+
+  await refreshUsers();
   openModal.value = false;
 }
 </script>

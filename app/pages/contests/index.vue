@@ -1,16 +1,46 @@
 <script setup lang="ts">
-const { data: contests } = await useFetch("/api/contests");
+import type { Database } from "~/types/database.types";
 
-const posts = computed(() => {
-  return contests.value?.map((contest) => {
-    return {
+type Contest = {
+  id: number;
+  title: string;
+  description: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+const supabase = useSupabaseClient<Database>();
+
+const { data: contests } = await useAsyncData<Contest[]>(
+  "contests-list",
+  async () => {
+    const { data, error } = await supabase
+      .from("contests")
+      .select("id, title, description, created_at, updated_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw createError({ statusCode: 500, statusMessage: error.message });
+    }
+
+    return (data ?? []).map((contest) => ({
+      id: contest.id,
       title: contest.title,
-      description: contest.description || "",
-      date: contest.createdAt,
-      to: `/contests/${contest.id}`,
-    };
-  });
-});
+      description: contest.description,
+      createdAt: contest.created_at,
+      updatedAt: contest.updated_at,
+    }));
+  }
+);
+
+const posts = computed(() =>
+  contests.value?.map((contest) => ({
+    title: contest.title,
+    description: contest.description || "",
+    date: contest.createdAt,
+    to: `/contests/${contest.id}`,
+  }))
+);
 </script>
 
 <template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Notice } from "@prisma/client";
+import type { Database } from "~/types/database.types";
+
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
@@ -7,7 +8,47 @@ definePageMeta({
   layout: "admin",
 });
 
-const { data: notices } = await useFetch("/api/admin/notices");
+type Notice = {
+  id?: number;
+  title: string;
+  category: string | null;
+  content: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+const supabase = useSupabaseClient<Database>();
+const toast = useToast();
+
+const emptyNotice = (): Notice => ({
+  title: "",
+  category: "",
+  content: "",
+  createdAt: null,
+  updatedAt: null,
+});
+
+const { data: notices, refresh: refreshNotices } =
+  await useAsyncData<Notice[]>("admin-notices", async () => {
+    const { data, error } = await supabase
+      .from("notices")
+      .select("id, title, category, content, created_at, updated_at")
+      .order("id", { ascending: false });
+
+    if (error) {
+      throw createError({ statusCode: 500, statusMessage: error.message });
+    }
+
+    return (data ?? []).map((notice) => ({
+      id: notice.id,
+      title: notice.title,
+      category: notice.category,
+      content: notice.content,
+      createdAt: notice.created_at,
+      updatedAt: notice.updated_at,
+    }));
+  });
+
 const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "title", header: "标题" },
@@ -16,63 +57,59 @@ const columns = [
   { accessorKey: "updatedAt", header: "更新时间" },
   {
     id: "actions",
-    cell: ({ row }: any) => {
-      return h(
+    cell: ({ row }: any) =>
+      h(
         UDropdownMenu,
         {
           items: [
             {
               label: "编辑公告",
               onClick: () => {
-                currentNotice.value = row.original;
+                currentNotice.value = { ...row.original };
                 openModal.value = true;
               },
             },
           ],
         },
-        () => {
-          return h(UButton, {
+        () =>
+          h(UButton, {
             icon: "i-lucide-ellipsis-vertical",
             color: "neutral",
             variant: "ghost",
-          });
-        }
-      );
-    },
+          })
+      ),
   },
 ];
+
 const openModal = ref(false);
-const currentNotice = ref<Partial<Notice>>({
-  title: "",
-  category: "",
-  content: "",
-});
+const currentNotice = ref<Notice>(emptyNotice());
 
 function createNotice() {
+  currentNotice.value = emptyNotice();
   openModal.value = true;
-  currentNotice.value = {
-    title: "",
-    category: "",
-    content: "",
-  };
 }
 
 async function updateNotice() {
   const notice = currentNotice.value;
-  if (notice) {
-    if (notice.id) {
-      await $fetch<any>(`/api/admin/notices/${notice.id}`, {
-        method: "PUT",
-        body: notice,
-      });
-    } else {
-      await $fetch<any>(`/api/admin/notices`, {
-        method: "POST",
-        body: notice,
-      });
-    }
+  if (!notice) return;
+
+  const payload = {
+    title: notice.title,
+    category: notice.category,
+    content: notice.content,
+    updated_at: new Date().toISOString(),
+  } satisfies Database["public"]["Tables"]["notices"]["Insert"];
+
+  const { error } = notice.id
+    ? await supabase.from("notices").update(payload).eq("id", notice.id)
+    : await supabase.from("notices").insert([payload]);
+
+  if (error) {
+    toast.add({ title: error.message, color: "error" });
+    return;
   }
-  notices.value = await $fetch<any>("/api/admin/notices");
+
+  await refreshNotices();
   openModal.value = false;
 }
 </script>
