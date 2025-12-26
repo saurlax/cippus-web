@@ -9,8 +9,8 @@ create sequence "public"."notices_id_seq";
     "id" integer not null default nextval('public.awards_id_seq'::regclass),
     "user_id" uuid not null,
     "contest_id" bigint not null,
-    "created_at" timestamp with time zone default now(),
-    "updated_at" timestamp with time zone default now()
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now()
       );
 
 
@@ -19,8 +19,8 @@ create sequence "public"."notices_id_seq";
     "id" integer not null default nextval('public.contests_id_seq'::regclass),
     "title" text not null,
     "description" text,
-    "created_at" timestamp with time zone default now(),
-    "updated_at" timestamp with time zone default now()
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now()
       );
 
 
@@ -30,8 +30,8 @@ create sequence "public"."notices_id_seq";
     "title" text not null,
     "content" text not null,
     "category" text,
-    "created_at" timestamp with time zone default now(),
-    "updated_at" timestamp with time zone default now()
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now()
       );
 
 
@@ -42,8 +42,8 @@ create sequence "public"."notices_id_seq";
     "bio" text,
     "gender" text,
     "college" text,
-    "created_at" timestamp with time zone default now(),
-    "updated_at" timestamp with time zone default now()
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now()
       );
 
 
