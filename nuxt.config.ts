@@ -24,4 +24,11 @@ export default defineNuxtConfig({
     "/users": { isr: 3600 },
     "/admin/**": { ssr: false },
   },
+  supabase: {
+    redirectOptions: {
+      include: ["/admin(/*)?"],
+      login: "/login",
+      callback: "/",
+    },
+  },
 });

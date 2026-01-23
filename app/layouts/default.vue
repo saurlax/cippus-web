@@ -1,6 +1,13 @@
 <script setup lang="ts">
 const appConfig = useAppConfig();
-const { loggedIn, user, clear } = useUserSession();
+const supabase = useSupabaseClient();
+
+const user = useSupabaseUser();
+
+const logout = async () => {
+  await supabase.auth.signOut();
+  navigateTo("/login");
+};
 
 const navItems = computed(() => {
   const links = [
@@ -27,10 +34,10 @@ const navItems = computed(() => {
 });
 
 const userItems = computed(() => {
-  if (loggedIn.value) {
+  if (user.value) {
     return [
       { label: "个人中心", to: `/users/${user.value?.username}` },
-      { label: "退出登录", onSelect: clear },
+      { label: "退出登录", onSelect: logout },
     ];
   } else {
     return [
@@ -50,13 +57,10 @@ const userItems = computed(() => {
     </template>
     <UNavigationMenu :items="navItems" />
     <template #right>
+      <UColorModeButton />
       <UDropdownMenu :items="userItems">
         <div>
-          <UAvatar
-            v-if="loggedIn && user?.name"
-            class="cursor-pointer"
-            :text="user.name?.[0]"
-          />
+          <UAvatar v-if="user" class="cursor-pointer" :text="user.email" />
           <UAvatar v-else class="cursor-pointer" icon="i-lucide-user-round" />
         </div>
       </UDropdownMenu>
@@ -66,6 +70,7 @@ const userItems = computed(() => {
     </template>
   </UHeader>
   <UMain>
+    ->{{ user }}<-
     <slot />
   </UMain>
   <USeparator type="dashed" />

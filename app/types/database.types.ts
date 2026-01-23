@@ -34,56 +34,26 @@ export type Database = {
   }
   public: {
     Tables: {
-      activities: {
-        Row: {
-          id: number
-          name: string
-          description: string | null
-          start_date: string | null
-          end_date: string | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: number
-          name: string
-          description?: string | null
-          start_date?: string | null
-          end_date?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: number
-          name?: string
-          description?: string | null
-          start_date?: string | null
-          end_date?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       awards: {
         Row: {
           contest_id: number
-          created_at: string | null
+          created_at: string
           id: number
-          updated_at: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
           contest_id: number
-          created_at?: string | null
+          created_at?: string
           id?: number
-          updated_at?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
           contest_id?: number
-          created_at?: string | null
+          created_at?: string
           id?: number
-          updated_at?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -98,32 +68,32 @@ export type Database = {
             foreignKeyName: "awards_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
       contests: {
         Row: {
-          created_at: string | null
+          created_at: string
           description: string | null
           id: number
           title: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           id?: number
           title: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           description?: string | null
           id?: number
           title?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -131,68 +101,53 @@ export type Database = {
         Row: {
           category: string | null
           content: string
-          created_at: string | null
+          created_at: string
           id: number
           title: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
           category?: string | null
           content: string
-          created_at?: string | null
+          created_at?: string
           id?: number
           title: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
           category?: string | null
           content?: string
-          created_at?: string | null
+          created_at?: string
           id?: number
           title?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
-      users: {
+      profiles: {
         Row: {
-          username: string | null
-          email: string | null
-          admin: boolean | null
-          password: string | null
           bio: string | null
           college: string | null
-          created_at: string | null
           gender: string | null
           id: string
+          id_number: string | null
           name: string | null
-          updated_at: string | null
         }
         Insert: {
-          username?: string | null
-          email?: string | null
-          admin?: boolean | null
-          password?: string | null
           bio?: string | null
           college?: string | null
-          created_at?: string | null
           gender?: string | null
           id: string
+          id_number?: string | null
           name?: string | null
-          updated_at?: string | null
         }
         Update: {
-          username?: string | null
-          email?: string | null
-          admin?: boolean | null
-          password?: string | null
           bio?: string | null
           college?: string | null
-          created_at?: string | null
           gender?: string | null
           id?: string
+          id_number?: string | null
           name?: string | null
-          updated_at?: string | null
         }
         Relationships: []
       }

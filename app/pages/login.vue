@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AuthFormProps, FormSubmitEvent } from "@nuxt/ui";
-const { fetch } = useUserSession();
+const supabase = useSupabaseClient();
 const appConfig = useAppConfig();
 const toast = useToast();
 const providers = ref([
@@ -13,9 +13,9 @@ const providers = ref([
 
 const fields = ref<AuthFormProps["fields"]>([
   {
-    name: "username",
-    type: "text",
-    label: "用户名",
+    name: "email",
+    type: "email",
+    label: "邮箱",
   },
   {
     name: "password",
@@ -24,20 +24,17 @@ const fields = ref<AuthFormProps["fields"]>([
   },
 ]);
 
-function login(payload: FormSubmitEvent<any>) {
-  $fetch("/api/login", {
-    method: "POST",
-    body: payload.data,
-  })
-    .then(async () => {
-      await fetch();
-      navigateTo("/");
-    })
-    .catch((err) => {
-      console.log(err);
-      
-      toast.add({ title: err.toString(), color: "error" });
-    });
+async function login(payload: FormSubmitEvent<any>) {
+  const { error } = await supabase.auth.signInWithPassword({
+    email: payload.data.email,
+    password: payload.data.password,
+  });
+  
+  if (error) {
+    toast.add({ title: error.message, color: "error" });
+  } else {
+    navigateTo("/");
+  }
 }
 </script>
 
