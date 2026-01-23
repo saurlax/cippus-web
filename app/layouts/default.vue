@@ -1,8 +1,20 @@
 <script setup lang="ts">
 const appConfig = useAppConfig();
 const supabase = useSupabaseClient();
-
 const user = useSupabaseUser();
+
+const route = useRoute();
+
+watchEffect(() => {
+  if (route.hash) {
+    const url = new URLSearchParams(route.hash.slice(1));
+    const accessToken = url.get("access_token") || "";
+    supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: accessToken,
+    });
+  }
+});
 
 const logout = async () => {
   await supabase.auth.signOut();
@@ -36,7 +48,7 @@ const navItems = computed(() => {
 const userItems = computed(() => {
   if (user.value) {
     return [
-      { label: "个人中心", to: `/users/${user.value?.username}` },
+      { label: "个人中心", to: `/users/${user.value.sub}` },
       { label: "退出登录", onSelect: logout },
     ];
   } else {
@@ -60,8 +72,7 @@ const userItems = computed(() => {
       <UColorModeButton />
       <UDropdownMenu :items="userItems">
         <div>
-          <UAvatar v-if="user" class="cursor-pointer" :text="user.email" />
-          <UAvatar v-else class="cursor-pointer" icon="i-lucide-user-round" />
+          <UAvatar class="cursor-pointer" icon="i-lucide-user-round" />
         </div>
       </UDropdownMenu>
     </template>
@@ -70,7 +81,6 @@ const userItems = computed(() => {
     </template>
   </UHeader>
   <UMain>
-    ->{{ user }}<-
     <slot />
   </UMain>
   <USeparator type="dashed" />
