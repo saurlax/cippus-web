@@ -1,0 +1,15 @@
+CREATE TABLE public.notices (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  category TEXT,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE
+  public.notices ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "select_all" ON public.notices FOR
+SELECT
+  USING (true);
