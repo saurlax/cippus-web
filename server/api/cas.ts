@@ -22,20 +22,16 @@ export default defineEventHandler(async (event) => {
     .eq("id_number", id_number)
     .single();
 
-  console.log(user);
-
   if (!user) {
     const { data } = await supabase.auth.admin.createUser({
       email,
     });
     user = data.user!;
-    console.log(
-      await supabase.from("profiles").insert({
-        id: user.id,
-        id_number,
-        name: rawXml.match(/<cas:USER_NAME>([^<]+)<\/cas:USER_NAME>/)?.[1],
-      }),
-    );
+    await supabase.from("profiles").insert({
+      id: user.id,
+      id_number,
+      name: rawXml.match(/<cas:USER_NAME>([^<]+)<\/cas:USER_NAME>/)?.[1],
+    });
   }
 
   const { data } = await supabase.auth.admin.generateLink({
