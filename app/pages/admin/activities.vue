@@ -2,10 +2,6 @@
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
-definePageMeta({
-  layout: "admin",
-});
-
 const { data: activities } = await useFetch("/api/admin/activities");
 const columns = [
   { accessorKey: "id", header: "#" },

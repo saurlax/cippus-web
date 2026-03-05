@@ -2,10 +2,6 @@
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
-definePageMeta({
-  layout: "admin",
-});
-
 const { data: users } = await useFetch("/api/admin/users");
 const columns = [
   { accessorKey: "id", header: "#" },
@@ -50,8 +46,8 @@ const columns = [
 ];
 const openModal = ref(false);
 const genderItems = ref([
-  { label: '男', value: 'male' },
-  { label: '女', value: 'female' },
+  { label: "男", value: "male" },
+  { label: "女", value: "female" },
 ]);
 const currentUser = ref<any>({
   username: "",

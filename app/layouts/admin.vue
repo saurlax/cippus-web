@@ -29,6 +29,12 @@ const items = [
     to: "/admin/users",
     value: "users",
   },
+  {
+    label: "奖项管理",
+    icon: "i-lucide-award",
+    to: "/admin/awards",
+    value: "awards",
+  },
 ];
 </script>
 
