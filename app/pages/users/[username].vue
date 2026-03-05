@@ -2,10 +2,32 @@
 const route = useRoute();
 const { user: sessionUser } = useUserSession();
 const toast = useToast();
+const { awardLevels, awardTypes } = useAwards();
 
 const username = computed(() => String(route.params.username || ""));
+const isSelf = computed(() => sessionUser.value?.username === username.value);
+
 const { data: user, refresh } = await useFetch(
   () => `/api/users/${username.value}`,
+);
+const { data: awardsResponse, refresh: refreshAwards } = await useFetch(
+  () => `/api/users/${username.value}/awards`,
+);
+
+interface AwardWithContest {
+  id: number;
+  userId: number;
+  contestId: number;
+  level: string;
+  type: string;
+  status: string;
+  updatedAt: string;
+  contest: { id: number; title: string; description: string | null } | null;
+}
+const { data: contests } = await useFetch("/api/contests");
+
+const awards = computed<AwardWithContest[]>(
+  () => (awardsResponse.value as any) || [],
 );
 
 if (!user.value) {
@@ -22,6 +44,25 @@ const form = reactive({
   college: "",
   password: "",
 });
+
+const openAward = ref(false);
+const savingAward = ref(false);
+const awardForm = reactive({
+  contestId: undefined as number | undefined,
+  level: "national",
+  type: "team_first_prize",
+});
+
+const contestItems = computed(() =>
+  (contests.value || []).map((c: any) => ({
+    label: c.title,
+    value: c.id,
+  })),
+);
+const levelItems = ref(awardLevelItems);
+const typeItems = ref(awardTypeItems);
+
+const awardsList = computed(() => awards.value || []);
 
 const genderItems = ref([
   { label: "男", value: "male" },
@@ -54,6 +95,13 @@ function startEdit() {
   form.college = user.value.college || "";
   form.password = "";
   openEdit.value = true;
+}
+
+function startAddAward() {
+  awardForm.contestId = undefined;
+  awardForm.level = "national";
+  awardForm.type = "team_first_prize";
+  openAward.value = true;
 }
 
 async function saveProfile() {
@@ -92,6 +140,42 @@ async function saveProfile() {
     saving.value = false;
   }
 }
+
+async function saveAward() {
+  if (savingAward.value) {
+    return;
+  }
+  if (!awardForm.contestId) {
+    toast.add({ title: "请选择比赛", color: "warning" });
+    return;
+  }
+  try {
+    savingAward.value = true;
+    await $fetch(`/api/users/${username.value}/awards`, {
+      method: "POST",
+      body: {
+        contestId: awardForm.contestId,
+        level: awardForm.level,
+        type: awardForm.type,
+      },
+    });
+    await refreshAwards();
+    openAward.value = false;
+    toast.add({
+      title: "奖项已添加",
+      color: "success",
+      icon: "i-lucide-check",
+    });
+  } catch {
+    toast.add({
+      title: "添加失败",
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    savingAward.value = false;
+  }
+}
 </script>
 
 <template>
@@ -106,7 +190,7 @@ async function saveProfile() {
 
       <template #links>
         <UButton
-          v-if="sessionUser && sessionUser.username === user.username"
+          v-if="isSelf"
           variant="outline"
           icon="i-lucide-pencil"
           label="编辑资料"
@@ -118,13 +202,48 @@ async function saveProfile() {
     <UPage>
       <UPageBody>
         <UPageCard title="个人简介">
-          <div class="prose">
+          
             <MDC :value="user.bio || '尚无简介'" />
-          </div>
         </UPageCard>
 
         <UPageCard title="奖项">
-          <UEmpty title="暂无奖项" />
+          <template #header>
+            <UButton
+              v-if="isSelf"
+              variant="outline"
+              icon="i-lucide-plus"
+              label="添加奖项"
+              @click="startAddAward"
+            />
+          </template>
+
+          <div v-if="awardsList.length">
+            <ul class="space-y-1">
+              <li
+                v-for="a in awardsList"
+                :key="a.id"
+                class="flex justify-between"
+              >
+                <span>
+                  {{
+                    awardLevels[
+                      (a as AwardWithContest).level as keyof typeof awardLevels
+                    ] || a.level
+                  }}
+                  <template v-if="a.contest"
+                    >（{{ (a.contest as any).title }}）</template
+                  >
+                </span>
+                <span>{{
+                  awardTypes[
+                    (a as AwardWithContest).type as keyof typeof awardTypes
+                  ] || a.type
+                }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <UEmpty v-else title="暂无奖项" />
         </UPageCard>
       </UPageBody>
     </UPage>
@@ -171,6 +290,49 @@ async function saveProfile() {
             @click="openEdit = false"
           />
           <UButton :loading="saving" label="保存" @click="saveProfile" />
+        </div>
+      </template>
+    </UModal>
+
+    <UModal v-model:open="openAward" title="添加奖项">
+      <template #body>
+        <UForm class="space-y-4" @submit.prevent="saveAward">
+          <UFormField label="比赛" name="contestId">
+            <USelect
+              v-model="awardForm.contestId"
+              :items="contestItems"
+              class="w-full"
+              placeholder="请选择比赛"
+            />
+          </UFormField>
+          <UFormField label="级别" name="level">
+            <USelect
+              v-model="awardForm.level"
+              :items="levelItems"
+              class="w-full"
+              placeholder="请选择级别"
+            />
+          </UFormField>
+          <UFormField label="类型" name="type">
+            <USelect
+              v-model="awardForm.type"
+              :items="typeItems"
+              class="w-full"
+              placeholder="请选择类型"
+            />
+          </UFormField>
+        </UForm>
+      </template>
+
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="取消"
+            @click="openAward = false"
+          />
+          <UButton :loading="savingAward" label="保存" @click="saveAward" />
         </div>
       </template>
     </UModal>

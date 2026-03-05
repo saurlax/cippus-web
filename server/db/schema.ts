@@ -113,8 +113,12 @@ export const activitiesRelations = relations(activities, ({ many }) => ({
   applications: many(applications),
 }));
 
-export const awardsRelations = relations(awards, ({ many }) => ({
+export const awardsRelations = relations(awards, ({ many, one }) => ({
   applications: many(applications),
+  contest: one(contests, {
+    fields: [awards.contestId],
+    references: [contests.id],
+  }),
 }));
 
 export const applicationsRelations = relations(applications, ({ one }) => ({
