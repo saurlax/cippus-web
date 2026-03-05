@@ -2,7 +2,7 @@
 const route = useRoute();
 const { user: sessionUser } = useUserSession();
 const toast = useToast();
-const { awardLevels, awardTypes } = useAwards();
+const { awardLevels, awardTypes, awardLevelItems, awardTypeItems } = useAwards();
 
 const username = computed(() => String(route.params.username || ""));
 const isSelf = computed(() => sessionUser.value?.username === username.value);
@@ -53,6 +53,23 @@ const awardForm = reactive({
   type: "team_first_prize",
 });
 
+const selectedAward = ref<AwardWithContest | null>(null);
+
+function statusColor(status: string) {
+  switch (status) {
+    case "pending":
+      return "warning";
+    case "draft":
+      return "neutral";
+    case "approved":
+      return "success";
+    case "rejected":
+      return "error";
+    default:
+      return "neutral";
+  }
+}
+
 const contestItems = computed(() =>
   (contests.value || []).map((c: any) => ({
     label: c.title,
@@ -98,9 +115,18 @@ function startEdit() {
 }
 
 function startAddAward() {
+  selectedAward.value = null;
   awardForm.contestId = undefined;
   awardForm.level = "national";
   awardForm.type = "team_first_prize";
+  openAward.value = true;
+}
+
+function startEditAward(a: AwardWithContest) {
+  selectedAward.value = a;
+  awardForm.contestId = a.contestId;
+  awardForm.level = a.level;
+  awardForm.type = a.type;
   openAward.value = true;
 }
 
@@ -151,24 +177,40 @@ async function saveAward() {
   }
   try {
     savingAward.value = true;
-    await $fetch(`/api/users/${username.value}/awards`, {
-      method: "POST",
-      body: {
-        contestId: awardForm.contestId,
-        level: awardForm.level,
-        type: awardForm.type,
-      },
-    });
+    if (selectedAward.value) {
+      await $fetch(`/api/users/${username.value}/awards/${selectedAward.value.id}`, {
+        method: "put" as any,
+        body: {
+          contestId: awardForm.contestId,
+          level: awardForm.level,
+          type: awardForm.type,
+        },
+      });
+      toast.add({
+        title: "奖项已更新，请等待审核",
+        color: "success",
+        icon: "i-lucide-check",
+      });
+    } else {
+      await $fetch(`/api/users/${username.value}/awards`, {
+        method: "post",
+        body: {
+          contestId: awardForm.contestId,
+          level: awardForm.level,
+          type: awardForm.type,
+        },
+      });
+      toast.add({
+        title: "奖项已添加",
+        color: "success",
+        icon: "i-lucide-check",
+      });
+    }
     await refreshAwards();
     openAward.value = false;
-    toast.add({
-      title: "奖项已添加",
-      color: "success",
-      icon: "i-lucide-check",
-    });
   } catch {
     toast.add({
-      title: "添加失败",
+      title: selectedAward.value ? "更新失败" : "添加失败",
       color: "error",
       icon: "i-lucide-circle-alert",
     });
@@ -214,33 +256,40 @@ async function saveAward() {
             @click="startAddAward"
           />
 
-          <div v-if="awardsList.length">
-            <ul class="space-y-1">
-              <li
+          <UPageGrid cols="1 sm:2 md:3" gap="4" class="mt-4">
+            <template v-if="awardsList.length">
+              <UPageCard
                 v-for="a in awardsList"
                 :key="a.id"
-                class="flex justify-between"
+                class="cursor-pointer"
+                @click="startEditAward(a)"
               >
-                <span>
-                  {{
-                    awardLevels[
-                      (a as AwardWithContest).level as keyof typeof awardLevels
-                    ] || a.level
-                  }}
-                  <template v-if="a.contest"
-                    >（{{ (a.contest as any).title }}）</template
-                  >
-                </span>
-                <span>{{
-                  awardTypes[
-                    (a as AwardWithContest).type as keyof typeof awardTypes
-                  ] || a.type
-                }}</span>
-              </li>
-            </ul>
-          </div>
-
-          <UEmpty v-else title="暂无奖项" />
+                <template #title>
+                  {{ (a.contest as any)?.title || "未知比赛" }}
+                </template>
+                <template #description>
+                  <div class="flex flex-wrap gap-1">
+                    <UBadge>{{
+                      awardLevels[
+                        (a as AwardWithContest).level as keyof typeof awardLevels
+                      ] || a.level
+                    }}</UBadge>
+                    <UBadge>{{
+                      awardTypes[
+                        (a as AwardWithContest).type as keyof typeof awardTypes
+                      ] || a.type
+                    }}</UBadge>
+                    <UBadge :color="statusColor(a.status)" variant="outline">
+                      {{ a.status }}
+                    </UBadge>
+                  </div>
+                </template>
+              </UPageCard>
+            </template>
+            <template v-else>
+              <UEmpty title="暂无奖项" />
+            </template>
+          </UPageGrid>
         </UPageCard>
       </UPageBody>
     </UPage>
@@ -291,7 +340,10 @@ async function saveAward() {
       </template>
     </UModal>
 
-    <UModal v-model:open="openAward" title="添加奖项">
+    <UModal
+      v-model:open="openAward"
+      :title="selectedAward ? '编辑奖项' : '添加奖项'"
+    >
       <template #body>
         <UForm class="space-y-4" @submit.prevent="saveAward">
           <UFormField label="比赛" name="contestId">
