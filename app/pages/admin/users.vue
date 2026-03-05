@@ -49,7 +49,7 @@ const columns = [
   },
 ];
 const openModal = ref(false);
-const genderOptions = ref([
+const genderItems = ref([
   { label: '男', value: 'male' },
   { label: '女', value: 'female' },
 ]);
@@ -140,7 +140,7 @@ async function updateUser() {
           <USelect
             class="w-full"
             v-model="currentUser.gender"
-            :options="genderOptions"
+            :items="genderItems"
             placeholder="请选择性别"
           />
         </UFormField>

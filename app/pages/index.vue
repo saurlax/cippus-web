@@ -4,6 +4,7 @@ const appConfig = useAppConfig();
 
 <template>
   <UPageCTA
+    variant="naked"
     :title="appConfig.title"
     :description="appConfig.description"
     orientation="horizontal"

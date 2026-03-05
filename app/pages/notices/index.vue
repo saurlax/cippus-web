@@ -16,6 +16,8 @@ const posts = computed(() => {
 <template>
   <UContainer>
     <UPageHeader title="公告列表" />
-    <UBlogPosts :posts />
+    <UPageBody>
+      <UBlogPosts :posts />
+    </UPageBody>
   </UContainer>
 </template>
