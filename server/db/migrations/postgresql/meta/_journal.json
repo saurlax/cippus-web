@@ -8,6 +8,13 @@
       "when": 1772681753522,
       "tag": "0000_smart_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772687454507,
+      "tag": "0001_next_luckman",
+      "breakpoints": true
     }
   ]
 }

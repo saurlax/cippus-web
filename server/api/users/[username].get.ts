@@ -10,5 +10,15 @@ export default defineEventHandler(async (event) => {
 
   return await db.query.users.findFirst({
     where: eq(schema.users.username, username),
+    columns: {
+      id: true,
+      username: true,
+      name: true,
+      bio: true,
+      email: true,
+      gender: true,
+      college: true,
+      admin: true,
+    },
   });
 });

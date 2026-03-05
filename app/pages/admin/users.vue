@@ -49,6 +49,10 @@ const columns = [
   },
 ];
 const openModal = ref(false);
+const genderOptions = ref([
+  { label: '男', value: 'male' },
+  { label: '女', value: 'female' },
+]);
 const currentUser = ref<any>({
   username: "",
   password: "",
@@ -66,7 +70,7 @@ function createUser() {
     password: "",
     name: "",
     email: "",
-    gender: "",
+    gender: "male",
     college: "",
     admin: false,
   };
@@ -133,10 +137,11 @@ async function updateUser() {
           />
         </UFormField>
         <UFormField label="性别" name="gender">
-          <UInput
+          <USelect
             class="w-full"
             v-model="currentUser.gender"
-            placeholder="请输入性别"
+            :options="genderOptions"
+            placeholder="请选择性别"
           />
         </UFormField>
         <UFormField label="学院" name="college">

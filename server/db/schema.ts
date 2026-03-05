@@ -42,7 +42,9 @@ export const users = pgTable("users", {
   name: text("name"),
   bio: text("bio"),
   email: text("email"),
-  gender: text("gender"),
+  gender: text("gender", { enum: ["male", "female"] })
+    .notNull()
+    .default("male"),
   college: text("college"),
   admin: boolean("admin").notNull().default(false),
 });
