@@ -2,7 +2,7 @@
 const { data: contests } = await useFetch("/api/contests");
 
 const posts = computed(() => {
-  return contests.value?.map((contest) => {
+  return contests.value?.map((contest: any) => {
     return {
       title: contest.title,
       description: contest.description || "",

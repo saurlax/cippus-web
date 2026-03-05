@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Contest } from "@prisma/client";
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
@@ -36,13 +35,13 @@ const columns = [
             color: "neutral",
             variant: "ghost",
           });
-        }
+        },
       );
     },
   },
 ];
 const openModal = ref(false);
-const currentContest = ref<Partial<Contest>>({
+const currentContest = ref<any>({
   title: "",
   description: "",
 });

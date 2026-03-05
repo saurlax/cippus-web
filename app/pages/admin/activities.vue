@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Activity } from "@prisma/client";
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
@@ -36,13 +35,13 @@ const columns = [
             color: "neutral",
             variant: "ghost",
           });
-        }
+        },
       );
     },
   },
 ];
 const openModal = ref(false);
-const currentActivity = ref<Partial<Activity>>({
+const currentActivity = ref<any>({
   name: "",
   description: "",
   startDate: new Date(),
@@ -107,14 +106,14 @@ async function updateActivity() {
           <UInput
             class="w-full"
             type="date"
-            v-model="currentActivity.startDate as any"
+            v-model="currentActivity.startDate"
           />
         </UFormField>
         <UFormField label="结束日期" name="endDate" required>
           <UInput
             class="w-full"
             type="date"
-            v-model="currentActivity.endDate as any"
+            v-model="currentActivity.endDate"
           />
         </UFormField>
       </UForm>

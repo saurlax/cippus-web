@@ -2,7 +2,7 @@
 const { data: notices } = await useFetch("/api/notices");
 
 const posts = computed(() => {
-  return notices.value?.map((notice) => {
+  return notices.value?.map((notice: any) => {
     return {
       title: notice.title,
       description: notice.content.slice(0, 100) + "...",

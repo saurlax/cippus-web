@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { User } from "@prisma/client";
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
@@ -10,17 +9,17 @@ definePageMeta({
 const { data: users } = await useFetch("/api/admin/users");
 const columns = [
   { accessorKey: "id", header: "#" },
-  { accessorKey: "username", header: "用户名" },
+  { accessorKey: "username", header: "用户" },
   { accessorKey: "name", header: "姓名" },
   { accessorKey: "email", header: "邮箱" },
   { accessorKey: "gender", header: "性别" },
   { accessorKey: "college", header: "学院" },
-  { 
-    accessorKey: "admin", 
-    header: "管理员",
+  {
+    accessorKey: "admin",
+    header: "管理",
     cell: ({ row }: any) => {
       return row.original.admin ? "是" : "否";
-    }
+    },
   },
   {
     id: "actions",
@@ -44,13 +43,13 @@ const columns = [
             color: "neutral",
             variant: "ghost",
           });
-        }
+        },
       );
     },
   },
 ];
 const openModal = ref(false);
-const currentUser = ref<Partial<User>>({
+const currentUser = ref<any>({
   username: "",
   password: "",
   name: "",
@@ -103,7 +102,7 @@ async function updateUser() {
   <UModal v-model:open="openModal" title="编辑用户">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit="updateUser">
-        <UFormField label="用户名" name="username" required>
+        <UFormField label="用户" name="username" required>
           <UInput
             class="w-full"
             v-model="currentUser.username"
@@ -147,7 +146,7 @@ async function updateUser() {
             placeholder="请输入学院"
           />
         </UFormField>
-        <UFormField label="管理员" name="admin">
+        <UFormField label="管理" name="admin">
           <UCheckbox v-model="currentUser.admin" label="设为管理员" />
         </UFormField>
       </UForm>

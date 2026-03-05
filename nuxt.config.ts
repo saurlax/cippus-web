@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  modules: ["@nuxt/ui", "@nuxtjs/mdc", "nuxt-auth-utils"],
+  modules: ["@nuxt/ui", "@nuxtjs/mdc", "nuxt-auth-utils", "@nuxthub/core"],
   appConfig: {
     site: "https://cippus.naosi.org",
     title: "创新创业实践中心",
@@ -16,12 +16,10 @@ export default defineNuxtConfig({
   ui: {
     fonts: false,
   },
+  hub: {
+    db: "postgresql",
+  },
   routeRules: {
-    "/": { prerender: true },
-    "/activities": { isr: 3600 },
-    "/contests": { isr: 3600 },
-    "/notices": { isr: 3600 },
-    "/users": { isr: 3600 },
-    "/admin/**": { ssr: false },
+    "/admin/**": { appLayout: "admin" },
   },
 });

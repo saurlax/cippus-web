@@ -5,25 +5,23 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare && prisma generate --no-engine"
+    "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxt/ui": "^4.2.1",
-    "@nuxtjs/mdc": "^0.19.1",
-    "@prisma/client": "^6.18.0",
+    "@electric-sql/pglite": "^0.3.15",
+    "@nuxt/ui": "^4.5.1",
+    "@nuxthub/core": "0.10.7",
+    "@nuxtjs/mdc": "^0.20.2",
     "dayjs": "^1.11.19",
-    "nuxt": "^4.2.1",
-    "nuxt-auth-utils": "0.5.25",
-    "tailwindcss": "^4.1.17",
-    "typescript": "^5.9.3",
-    "vue": "^3.5.25",
-    "vue-router": "^4.6.3",
-    "zod": "^4.1.13"
+    "drizzle-kit": "^0.31.9",
+    "drizzle-orm": "^0.45.1",
+    "nuxt": "^4.3.1",
+    "nuxt-auth-utils": "0.5.29",
+    "postgres": "^3.4.8",
+    "tailwindcss": "^4.2.1",
+    "vue": "^3.5.29",
+    "vue-router": "^5.0.3",
+    "zod": "^4.3.6"
   },
-  "devDependencies": {
-    "prisma": "^6.18.0"
-  },
-  "packageManager": "pnpm@10.24.0"
+  "packageManager": "pnpm@10.30.3"
 }

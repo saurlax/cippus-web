@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Notice } from "@prisma/client";
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
@@ -36,13 +35,13 @@ const columns = [
             color: "neutral",
             variant: "ghost",
           });
-        }
+        },
       );
     },
   },
 ];
 const openModal = ref(false);
-const currentNotice = ref<Partial<Notice>>({
+const currentNotice = ref<any>({
   title: "",
   category: "",
   content: "",
