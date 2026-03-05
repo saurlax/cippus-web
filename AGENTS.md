@@ -1,7 +1,8 @@
-本项目使用 Nuxt UI + NuxtHub。
+本项目使用 Nuxt UI + NuxtHub。如果有不熟悉的地方，请调用 Context7 来获取相关文档。
 
 - 只有必要时才添加注释；
 - 尽量复用 Nuxt UI 的组件，包括使用 slot 来定制组件内容。如无必要不要写 tailwindcss；
+- 如果要从根目录导入，请使用类似 `#shared/` 的格式，如果要从 `app` 目录导入，请使用类似 `~/shared/` 的格式，不要使用相对路径；
 
 # 后端
 

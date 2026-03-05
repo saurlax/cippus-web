@@ -2,7 +2,8 @@
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
-const { awardLevels, awardTypes, awardLevelItems, awardTypeItems } = useAwards();
+import { awardLevels, awardTypes } from "#shared/utils/awards";
+const { t } = useI18n();
 
 const { data: awards } = await useFetch<any>("/api/admin/awards");
 const columns = [
@@ -13,17 +14,26 @@ const columns = [
     accessorKey: "level",
     header: "级别",
     cell: ({ row }: any) => {
-      return awardLevels[(row.original.level as keyof typeof awardLevels)] || row.original.level;
+      const lvl = row.original.level;
+      return t(`awards.levels.${lvl}`) || lvl;
     },
   },
   {
     accessorKey: "type",
     header: "类型",
     cell: ({ row }: any) => {
-      return awardTypes[(row.original.type as keyof typeof awardTypes)] || row.original.type;
+      const tp = row.original.type;
+      return t(`awards.types.${tp}`) || tp;
     },
   },
-  { accessorKey: "status", header: "状态" },
+  {
+    accessorKey: "status",
+    header: "状态",
+    cell: ({ row }: any) => {
+      const st = row.original.status;
+      return t(`awards.status.${st}`) || st;
+    },
+  },
   { accessorKey: "updatedAt", header: "更新时间" },
   {
     id: "actions",
@@ -112,26 +122,38 @@ async function editAward() {
           <USelect
             class="w-full"
             v-model="currentAward.level"
-            :items="awardLevelItems"
+            :items="
+              awardLevels.map((v: string) => ({
+                value: v,
+                label: t(`awards.levels.${v}`),
+              })) as any
+            "
           />
         </UFormField>
         <UFormField label="类型" name="type">
           <USelect
             class="w-full"
             v-model="currentAward.type"
-            :items="awardTypeItems"
+            :items="
+              awardTypes.map((v: string) => ({
+                value: v,
+                label: t(`awards.types.${v}`),
+              })) as any
+            "
           />
         </UFormField>
         <UFormField label="状态" name="status">
           <USelect
             class="w-full"
             v-model="currentAward.status"
-            :items="[
-              { label: '草稿', value: 'draft' },
-              { label: '待审核', value: 'pending' },
-              { label: '通过', value: 'approved' },
-              { label: '拒绝', value: 'rejected' },
-            ]"
+            :items="
+              [
+                { label: t('awards.status.draft'), value: 'draft' },
+                { label: t('awards.status.pending'), value: 'pending' },
+                { label: t('awards.status.approved'), value: 'approved' },
+                { label: t('awards.status.rejected'), value: 'rejected' },
+              ] as any
+            "
           />
         </UFormField>
       </UForm>

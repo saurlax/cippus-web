@@ -2,7 +2,8 @@
 const route = useRoute();
 const { user: sessionUser } = useUserSession();
 const toast = useToast();
-const { awardLevels, awardTypes, awardLevelItems, awardTypeItems } = useAwards();
+import { awardLevels, awardTypes, awardLevelItems, awardTypeItems } from "../../../shared/utils/awards";
+const { t } = useI18n();
 
 const username = computed(() => String(route.params.username || ""));
 const isSelf = computed(() => sessionUser.value?.username === username.value);
@@ -76,8 +77,12 @@ const contestItems = computed(() =>
     value: c.id,
   })),
 );
-const levelItems = ref(awardLevelItems);
-const typeItems = ref(awardTypeItems);
+const levelItems = computed(() =>
+  awardLevels.map((v: string) => ({ value: v, label: t(`awards.levels.${v}`) }))
+);
+const typeItems = computed(() =>
+  awardTypes.map((v: string) => ({ value: v, label: t(`awards.types.${v}`) }))
+);
 
 const awardsList = computed(() => awards.value || []);
 
@@ -269,18 +274,10 @@ async function saveAward() {
                 </template>
                 <template #description>
                   <div class="flex flex-wrap gap-1">
-                    <UBadge>{{
-                      awardLevels[
-                        (a as AwardWithContest).level as keyof typeof awardLevels
-                      ] || a.level
-                    }}</UBadge>
-                    <UBadge>{{
-                      awardTypes[
-                        (a as AwardWithContest).type as keyof typeof awardTypes
-                      ] || a.type
-                    }}</UBadge>
+                    <UBadge>{{ t(`awards.levels.${a.level}`) || a.level }}</UBadge>
+                    <UBadge>{{ t(`awards.types.${a.type}`) || a.type }}</UBadge>
                     <UBadge :color="statusColor(a.status)" variant="outline">
-                      {{ a.status }}
+                      {{ t(`awards.status.${a.status}`) || a.status }}
                     </UBadge>
                   </div>
                 </template>
@@ -356,16 +353,16 @@ async function saveAward() {
           </UFormField>
           <UFormField label="级别" name="level">
             <USelect
-              v-model="awardForm.level"
-              :items="levelItems"
+              v-model="awardForm.level as any"
+              :items="levelItems as any"
               class="w-full"
               placeholder="请选择级别"
             />
           </UFormField>
           <UFormField label="类型" name="type">
             <USelect
-              v-model="awardForm.type"
-              :items="typeItems"
+              v-model="awardForm.type as any"
+              :items="typeItems as any"
               class="w-full"
               placeholder="请选择类型"
             />

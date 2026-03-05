@@ -2,14 +2,24 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
-  modules: ["@nuxt/ui", "@nuxtjs/mdc", "nuxt-auth-utils", "@nuxthub/core"],
+  modules: [
+    "@nuxt/ui",
+    "@nuxtjs/mdc",
+    "nuxt-auth-utils",
+    "@nuxthub/core",
+    "@nuxtjs/i18n",
+  ],
+  routeRules: {
+    "/admin/**": { appLayout: "admin" },
+  },
   ui: {
     fonts: false,
   },
   hub: {
     db: "postgresql",
   },
-  routeRules: {
-    "/admin/**": { appLayout: "admin" },
+  i18n: {
+    defaultLocale: "zh",
+    locales: [{ code: "zh", file: "zh.json" }],
   },
 });
