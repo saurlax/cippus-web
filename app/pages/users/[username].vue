@@ -180,7 +180,7 @@ async function saveAward() {
 
 <template>
   <UContainer v-if="user">
-    <UPageHeader headline="用户" :description="user.college || '未知学院'">
+    <UPageHeader headline="用户" :description="user.college || ''">
       <template #title>
         <div class="flex items-center gap-2">
           <span>{{ user.name || user.username }}</span>
@@ -202,20 +202,17 @@ async function saveAward() {
     <UPage>
       <UPageBody>
         <UPageCard title="个人简介">
-          
-            <MDC :value="user.bio || '尚无简介'" />
+          <MDC :value="user.bio || '尚无简介'" />
         </UPageCard>
 
         <UPageCard title="奖项">
-          <template #header>
-            <UButton
-              v-if="isSelf"
-              variant="outline"
-              icon="i-lucide-plus"
-              label="添加奖项"
-              @click="startAddAward"
-            />
-          </template>
+          <UButton
+            v-if="isSelf"
+            variant="outline"
+            icon="i-lucide-plus"
+            label="添加奖项"
+            @click="startAddAward"
+          />
 
           <div v-if="awardsList.length">
             <ul class="space-y-1">
