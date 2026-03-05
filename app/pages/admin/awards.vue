@@ -2,13 +2,27 @@
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
+const { awardLevels, awardTypes, awardLevelItems, awardTypeItems } = useAwards();
+
 const { data: awards } = await useFetch<any>("/api/admin/awards");
 const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "user.username", header: "用户" },
   { accessorKey: "contest.title", header: "比赛" },
-  { accessorKey: "level", header: "级别" },
-  { accessorKey: "type", header: "类型" },
+  {
+    accessorKey: "level",
+    header: "级别",
+    cell: ({ row }: any) => {
+      return awardLevels[(row.original.level as keyof typeof awardLevels)] || row.original.level;
+    },
+  },
+  {
+    accessorKey: "type",
+    header: "类型",
+    cell: ({ row }: any) => {
+      return awardTypes[(row.original.type as keyof typeof awardTypes)] || row.original.type;
+    },
+  },
   { accessorKey: "status", header: "状态" },
   { accessorKey: "updatedAt", header: "更新时间" },
   {
