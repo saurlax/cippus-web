@@ -2,7 +2,6 @@
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
-import { awardLevels, awardTypes } from "#shared/utils/awards";
 const { t } = useI18n();
 
 const { data: awards } = await useFetch<any>("/api/admin/awards");

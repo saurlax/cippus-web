@@ -2,7 +2,6 @@
 const route = useRoute();
 const { user: sessionUser } = useUserSession();
 const toast = useToast();
-import { awardLevels, awardTypes, awardLevelItems, awardTypeItems } from "../../../shared/utils/awards";
 const { t } = useI18n();
 
 const username = computed(() => String(route.params.username || ""));
