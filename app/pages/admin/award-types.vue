@@ -1,7 +1,37 @@
 <script setup lang="ts">
 const UButton = resolveComponent("UButton");
+const toast = useToast();
 
 const { data: awardTypes } = await useFetch<any>("/api/admin/award-types");
+const confirmDeleteOpen = ref(false);
+const deletingAwardType = ref<any>(null);
+
+function openDeleteModal(item: any) {
+  deletingAwardType.value = item;
+  confirmDeleteOpen.value = true;
+}
+
+async function confirmDeleteAwardType() {
+  const item = deletingAwardType.value;
+  if (!item?.id) {
+    return;
+  }
+
+  try {
+    await $fetch(`/api/admin/award-types/${item.id}`, {
+      method: "delete",
+    });
+    awardTypes.value = await $fetch("/api/admin/award-types");
+    toast.add({ title: "删除成功", color: "success" });
+    confirmDeleteOpen.value = false;
+    deletingAwardType.value = null;
+  } catch (error: any) {
+    toast.add({
+      title: error?.data?.message || error?.message || "删除失败",
+      color: "error",
+    });
+  }
+}
 
 const columns = [
   { accessorKey: "id", header: "#" },
@@ -10,13 +40,6 @@ const columns = [
     id: "actions",
     cell: ({ row }: any) => {
       const item = row.original;
-
-      const remove = async () => {
-        await $fetch(`/api/admin/award-types/${item.id}`, {
-          method: "delete",
-        });
-        awardTypes.value = await $fetch("/api/admin/award-types");
-      };
 
       return h("div", { class: "flex gap-2" }, [
         h(UButton, {
@@ -32,7 +55,7 @@ const columns = [
           icon: "i-lucide-trash",
           color: "error",
           variant: "ghost",
-          onClick: remove,
+          onClick: () => openDeleteModal(item),
         }),
       ]);
     },
@@ -54,23 +77,32 @@ function createAwardType() {
 async function updateAwardType() {
   const item = currentAwardType.value;
   if (!item?.name?.trim()) {
+    toast.add({ title: "请输入奖项类型名称", color: "warning" });
     return;
   }
 
-  if (item.id) {
-    await $fetch(`/api/admin/award-types/${item.id}`, {
-      method: "put",
-      body: { name: item.name },
-    });
-  } else {
-    await $fetch(`/api/admin/award-types`, {
-      method: "post",
-      body: { name: item.name },
+  try {
+    if (item.id) {
+      await $fetch(`/api/admin/award-types/${item.id}`, {
+        method: "put",
+        body: { name: item.name },
+      });
+    } else {
+      await $fetch(`/api/admin/award-types`, {
+        method: "post",
+        body: { name: item.name },
+      });
+    }
+
+    awardTypes.value = await $fetch("/api/admin/award-types");
+    openModal.value = false;
+    toast.add({ title: "保存成功", color: "success" });
+  } catch (error: any) {
+    toast.add({
+      title: error?.data?.message || error?.message || "保存失败",
+      color: "error",
     });
   }
-
-  awardTypes.value = await $fetch("/api/admin/award-types");
-  openModal.value = false;
 }
 </script>
 
@@ -97,6 +129,20 @@ async function updateAwardType() {
     </template>
     <template #footer>
       <UButton @click="updateAwardType">保存</UButton>
+    </template>
+  </UModal>
+
+  <UModal v-model:open="confirmDeleteOpen" title="确认删除">
+    <template #body>
+      <p>确认删除类型「{{ deletingAwardType?.name || deletingAwardType?.id }}」吗？</p>
+    </template>
+    <template #footer>
+      <div class="flex items-center gap-2">
+        <UButton color="neutral" variant="ghost" @click="confirmDeleteOpen = false">
+          取消
+        </UButton>
+        <UButton color="error" @click="confirmDeleteAwardType">确认删除</UButton>
+      </div>
     </template>
   </UModal>
 </template>

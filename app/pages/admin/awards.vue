@@ -1,10 +1,10 @@
 <script setup lang="ts">
-const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
 const { t } = useI18n();
 
 const { data: awards } = await useFetch<any>("/api/admin/awards");
+
 const { data: awardTypes } = await useFetch<any>("/api/admin/award-types");
 const awardTypeItems = computed(() =>
   (awardTypes.value || []).map((item: any) => ({
@@ -63,31 +63,19 @@ const columns = [
           variant: "ghost",
           onClick: reject,
         }),
-        h(
-          UDropdownMenu,
-          {
-            items: [
-              {
-                label: "编辑奖项",
-                onClick: () => {
-                  currentAward.value = {
-                    id: item.id,
-                    status: item.status,
-                    awardTypeId: item.awardTypeId,
-                  };
-                  openModal.value = true;
-                },
-              },
-            ],
+        h(UButton, {
+          color: "neutral",
+          icon: "i-lucide-pencil",
+          variant: "ghost",
+          onClick: () => {
+            currentAward.value = {
+              id: item.id,
+              status: item.status,
+              awardTypeId: item.awardTypeId,
+            };
+            openModal.value = true;
           },
-          () => {
-            return h(UButton, {
-              icon: "i-lucide-ellipsis-vertical",
-              color: "neutral",
-              variant: "ghost",
-            });
-          },
-        ),
+        }),
       ]);
     },
   },

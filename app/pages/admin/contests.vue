@@ -1,8 +1,38 @@
 <script setup lang="ts">
-const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
+const toast = useToast();
 
-const { data: contests } = await useFetch("/api/admin/contests");
+const { data: contests, refresh } = await useFetch("/api/admin/contests");
+const confirmDeleteOpen = ref(false);
+const deletingContest = ref<any>(null);
+
+function openDeleteModal(item: any) {
+  deletingContest.value = item;
+  confirmDeleteOpen.value = true;
+}
+
+async function confirmDeleteContest() {
+  const item = deletingContest.value;
+  if (!item?.id) {
+    return;
+  }
+
+  try {
+    await $fetch(`/api/admin/contests/${item.id}`, {
+      method: "delete",
+    });
+    refresh();
+    toast.add({ title: "删除成功", color: "success" });
+    confirmDeleteOpen.value = false;
+    deletingContest.value = null;
+  } catch (error: any) {
+    toast.add({
+      title: error?.data?.message || error?.message || "删除失败",
+      color: "error",
+    });
+  }
+}
+
 const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "title", header: "标题" },
@@ -12,27 +42,25 @@ const columns = [
   {
     id: "actions",
     cell: ({ row }: any) => {
-      return h(
-        UDropdownMenu,
-        {
-          items: [
-            {
-              label: "编辑赛事",
-              onClick: () => {
-                currentContest.value = row.original;
-                openModal.value = true;
-              },
-            },
-          ],
-        },
-        () => {
-          return h(UButton, {
-            icon: "i-lucide-ellipsis-vertical",
-            color: "neutral",
-            variant: "ghost",
-          });
-        },
-      );
+      const item = row.original;
+
+      return h("div", { class: "flex items-center gap-1" }, [
+        h(UButton, {
+          icon: "i-lucide-pencil",
+          color: "neutral",
+          variant: "ghost",
+          onClick: () => {
+            currentContest.value = item;
+            openModal.value = true;
+          },
+        }),
+        h(UButton, {
+          icon: "i-lucide-trash",
+          color: "error",
+          variant: "ghost",
+          onClick: () => openDeleteModal(item),
+        }),
+      ]);
     },
   },
 ];
@@ -65,7 +93,7 @@ async function updateContest() {
       });
     }
   }
-  contests.value = await $fetch<any>("/api/admin/contests");
+  refresh();
   openModal.value = false;
 }
 </script>
@@ -98,6 +126,26 @@ async function updateContest() {
     </template>
     <template #footer>
       <UButton @click="updateContest">提交</UButton>
+    </template>
+  </UModal>
+
+  <UModal v-model:open="confirmDeleteOpen" title="确认删除">
+    <template #body>
+      <p>
+        确认删除赛事「{{ deletingContest?.title || deletingContest?.id }}」吗？
+      </p>
+    </template>
+    <template #footer>
+      <div class="flex items-center gap-2">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          @click="confirmDeleteOpen = false"
+        >
+          取消
+        </UButton>
+        <UButton color="error" @click="confirmDeleteContest">确认删除</UButton>
+      </div>
     </template>
   </UModal>
 </template>

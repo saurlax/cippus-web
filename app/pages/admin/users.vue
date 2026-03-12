@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
 
 const { data: users } = await useFetch("/api/admin/users");
@@ -20,27 +19,15 @@ const columns = [
   {
     id: "actions",
     cell: ({ row }: any) => {
-      return h(
-        UDropdownMenu,
-        {
-          items: [
-            {
-              label: "编辑用户",
-              onClick: () => {
-                currentUser.value = row.original;
-                openModal.value = true;
-              },
-            },
-          ],
+      return h(UButton, {
+        icon: "i-lucide-pencil",
+        color: "neutral",
+        variant: "ghost",
+        onClick: () => {
+          currentUser.value = row.original;
+          openModal.value = true;
         },
-        () => {
-          return h(UButton, {
-            icon: "i-lucide-ellipsis-vertical",
-            color: "neutral",
-            variant: "ghost",
-          });
-        },
-      );
+      });
     },
   },
 ];

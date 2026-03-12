@@ -1,8 +1,38 @@
 <script setup lang="ts">
-const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UButton = resolveComponent("UButton");
+const toast = useToast();
 
 const { data: notices } = await useFetch("/api/admin/notices");
+const confirmDeleteOpen = ref(false);
+const deletingNotice = ref<any>(null);
+
+function openDeleteModal(item: any) {
+  deletingNotice.value = item;
+  confirmDeleteOpen.value = true;
+}
+
+async function confirmDeleteNotice() {
+  const item = deletingNotice.value;
+  if (!item?.id) {
+    return;
+  }
+
+  try {
+    await $fetch(`/api/admin/notices/${item.id}`, {
+      method: "delete",
+    });
+    notices.value = await $fetch("/api/admin/notices");
+    toast.add({ title: "删除成功", color: "success" });
+    confirmDeleteOpen.value = false;
+    deletingNotice.value = null;
+  } catch (error: any) {
+    toast.add({
+      title: error?.data?.message || error?.message || "删除失败",
+      color: "error",
+    });
+  }
+}
+
 const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "title", header: "标题" },
@@ -12,27 +42,25 @@ const columns = [
   {
     id: "actions",
     cell: ({ row }: any) => {
-      return h(
-        UDropdownMenu,
-        {
-          items: [
-            {
-              label: "编辑公告",
-              onClick: () => {
-                currentNotice.value = row.original;
-                openModal.value = true;
-              },
-            },
-          ],
-        },
-        () => {
-          return h(UButton, {
-            icon: "i-lucide-ellipsis-vertical",
-            color: "neutral",
-            variant: "ghost",
-          });
-        },
-      );
+      const item = row.original;
+
+      return h("div", { class: "flex items-center gap-1" }, [
+        h(UButton, {
+          icon: "i-lucide-pencil",
+          color: "neutral",
+          variant: "ghost",
+          onClick: () => {
+            currentNotice.value = item;
+            openModal.value = true;
+          },
+        }),
+        h(UButton, {
+          icon: "i-lucide-trash",
+          color: "error",
+          variant: "ghost",
+          onClick: () => openDeleteModal(item),
+        }),
+      ]);
     },
   },
 ];
@@ -107,6 +135,20 @@ async function updateNotice() {
     </template>
     <template #footer>
       <UButton @click="updateNotice">提交</UButton>
+    </template>
+  </UModal>
+
+  <UModal v-model:open="confirmDeleteOpen" title="确认删除">
+    <template #body>
+      <p>确认删除公告「{{ deletingNotice?.title || deletingNotice?.id }}」吗？</p>
+    </template>
+    <template #footer>
+      <div class="flex items-center gap-2">
+        <UButton color="neutral" variant="ghost" @click="confirmDeleteOpen = false">
+          取消
+        </UButton>
+        <UButton color="error" @click="confirmDeleteNotice">确认删除</UButton>
+      </div>
     </template>
   </UModal>
 </template>
