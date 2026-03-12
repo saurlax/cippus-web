@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
     where: eq(schema.awards.userId, user.id),
     orderBy: schema.awards.updatedAt,
     with: {
+      awardType: true,
       contest: true,
     },
   });

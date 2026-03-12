@@ -1,11 +1,16 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
+import { integer, pgTable, text } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
+const awardTypesTable = pgTable("award_types", {
+  id: integer("id").primaryKey(),
+  name: text("name").notNull(),
+});
+
 const updateSchema = z.object({
-  contestId: z.number().int().positive().optional(),
-  level: z.string().optional(),
-  type: z.string().optional(),
+  contestId: z.coerce.number().int().positive().optional(),
+  awardTypeId: z.coerce.number().int().positive().optional(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -26,7 +31,7 @@ export default defineEventHandler(async (event) => {
 
   const rawBody = await readBody(event);
   const body = updateSchema.parse(rawBody);
-  const { contestId, level, type } = body;
+  const { contestId, awardTypeId } = body;
 
   // validate contest exists if provided
   if (contestId) {
@@ -42,12 +47,25 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  if (awardTypeId) {
+    const [awardType] = await db
+      .select({ id: awardTypesTable.id })
+      .from(awardTypesTable)
+      .where(eq(awardTypesTable.id, awardTypeId))
+      .limit(1);
+    if (!awardType) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "Award type not found",
+      });
+    }
+  }
+
   return await db
     .update(schema.awards)
     .set({
       ...(contestId ? { contestId } : {}),
-      ...(level ? ({ level: level as any } as any) : {}),
-      ...(type ? ({ type: type as any } as any) : {}),
+      ...(awardTypeId ? { awardTypeId } : {}),
       status: "draft",
     } as any)
     .where(eq(schema.awards.id, awardId))

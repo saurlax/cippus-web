@@ -16,27 +16,6 @@ export const reviewStatusEnum = pgEnum("review_status", [
   "rejected",
 ]);
 
-export const awardLevelEnum = pgEnum("award_level", [
-  "national",
-  "provincial",
-  "university",
-  "college",
-]);
-
-export const awardTypeEnum = pgEnum("award_type", [
-  "first_prize",
-  "second_prize",
-  "third_prize",
-  "first_place",
-  "second_place",
-  "third_place",
-  "fourth_place",
-  "fifth_place",
-  "sixth_place",
-  "other",
-  "recommended_not_awarded",
-]);
-
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -74,12 +53,18 @@ export const contests = pgTable("contests", {
     .$onUpdate(() => new Date()),
 });
 
+export const awardTypes = pgTable("award_types", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+});
+
 export const awards = pgTable("awards", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   contestId: integer("contest_id").notNull(),
-  level: awardLevelEnum("level").notNull(),
-  type: awardTypeEnum("type").notNull(),
+  awardTypeId: integer("award_type_id")
+    .notNull()
+    .references(() => awardTypes.id),
   status: reviewStatusEnum("status").notNull().default("draft"),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
@@ -117,6 +102,10 @@ export const activitiesRelations = relations(activities, ({ many }) => ({
 
 export const awardsRelations = relations(awards, ({ many, one }) => ({
   applications: many(applications),
+  awardType: one(awardTypes, {
+    fields: [awards.awardTypeId],
+    references: [awardTypes.id],
+  }),
   contest: one(contests, {
     fields: [awards.contestId],
     references: [contests.id],
@@ -125,6 +114,10 @@ export const awardsRelations = relations(awards, ({ many, one }) => ({
     fields: [awards.userId],
     references: [users.id],
   }),
+}));
+
+export const awardTypesRelations = relations(awardTypes, ({ many }) => ({
+  awards: many(awards),
 }));
 
 export const applicationsRelations = relations(applications, ({ one }) => ({

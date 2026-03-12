@@ -1,24 +1,5 @@
 {
   "awards": {
-    "levels": {
-      "national": "国家级",
-      "provincial": "省级",
-      "university": "校级",
-      "college": "学院级"
-    },
-    "types": {
-      "first_prize": "一等奖",
-      "second_prize": "二等奖",
-      "third_prize": "三等奖",
-      "first_place": "第一名",
-      "second_place": "第二名",
-      "third_place": "第三名",
-      "fourth_place": "第四名",
-      "fifth_place": "第五名",
-      "sixth_place": "第六名",
-      "other": "其他",
-      "recommended_not_awarded": "推荐但未获奖"
-    },
     "status": {
       "draft": "草稿",
       "pending": "待审核",

@@ -5,24 +5,22 @@ const UButton = resolveComponent("UButton");
 const { t } = useI18n();
 
 const { data: awards } = await useFetch<any>("/api/admin/awards");
+const { data: awardTypes } = await useFetch<any>("/api/award-types");
+const awardTypeItems = computed(() =>
+  (awardTypes.value || []).map((item: any) => ({
+    value: item.id,
+    label: item.name,
+  })),
+);
 const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "user.username", header: "用户" },
   { accessorKey: "contest.title", header: "比赛" },
   {
-    accessorKey: "level",
-    header: "级别",
-    cell: ({ row }: any) => {
-      const lvl = row.original.level;
-      return t(`awards.levels.${lvl}`) || lvl;
-    },
-  },
-  {
     accessorKey: "type",
     header: "类型",
     cell: ({ row }: any) => {
-      const tp = row.original.type;
-      return t(`awards.types.${tp}`) || tp;
+      return row.original.awardType?.name || "-";
     },
   },
   {
@@ -72,7 +70,11 @@ const columns = [
               {
                 label: "编辑奖项",
                 onClick: () => {
-                  currentAward.value = item;
+                  currentAward.value = {
+                    id: item.id,
+                    status: item.status,
+                    awardTypeId: item.awardTypeId,
+                  };
                   openModal.value = true;
                 },
               },
@@ -95,11 +97,14 @@ const openModal = ref(false);
 const currentAward = ref<any>({});
 
 async function editAward() {
-  // reuse same modal? could implement simple update
-  if (currentAward.value) {
-    const body = { ...currentAward.value };
-    // send to admin put
-    await $fetch(`/api/admin/awards/${body.id}`, { method: "put", body });
+  if (currentAward.value?.id) {
+    await $fetch(`/api/admin/awards/${currentAward.value.id}`, {
+      method: "put",
+      body: {
+        status: currentAward.value.status,
+        awardTypeId: currentAward.value.awardTypeId,
+      },
+    });
     openModal.value = false;
     awards.value = await $fetch("/api/admin/awards");
   }
@@ -117,28 +122,11 @@ async function editAward() {
   <UModal v-model:open="openModal" title="编辑奖项">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit.prevent="editAward">
-        <UFormField label="级别" name="level">
-          <USelect
-            class="w-full"
-            v-model="currentAward.level"
-            :items="
-              awardLevels.map((v: string) => ({
-                value: v,
-                label: t(`awards.levels.${v}`),
-              })) as any
-            "
-          />
-        </UFormField>
         <UFormField label="类型" name="type">
           <USelect
             class="w-full"
-            v-model="currentAward.type"
-            :items="
-              awardTypes.map((v: string) => ({
-                value: v,
-                label: t(`awards.types.${v}`),
-              })) as any
-            "
+            v-model="currentAward.awardTypeId"
+            :items="awardTypeItems as any"
           />
         </UFormField>
         <UFormField label="状态" name="status">
