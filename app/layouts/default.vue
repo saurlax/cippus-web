@@ -17,6 +17,9 @@ const navItems = computed(() => {
       to: "/activities",
     },
   ];
+  if (user.value) {
+    links.push({ label: "个人资料", to: `/users/${user.value?.username}` });
+  }
   if (user.value?.admin) {
     links.push({
       label: "管理后台",
@@ -28,10 +31,7 @@ const navItems = computed(() => {
 
 const userItems = computed(() => {
   if (loggedIn.value) {
-    return [
-      { label: "个人中心", to: `/users/${user.value?.username}` },
-      { label: "退出登录", onSelect: clear },
-    ];
+    return [{ label: "退出登录", onSelect: clear }];
   } else {
     return [
       {

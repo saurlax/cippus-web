@@ -7,32 +7,20 @@ const { t } = useI18n();
 const username = computed(() => String(route.params.username || ""));
 const isSelf = computed(() => sessionUser.value?.username === username.value);
 
-const { data: user, refresh } = await useFetch(
-  () => `/api/users/${username.value}`,
+const { data: user, refresh: refreshUser } = await useFetch(
+  `/api/users/${username.value}`,
 );
-const { data: awardsResponse, refresh: refreshAwards } = await useFetch(
-  () => `/api/users/${username.value}/awards`,
+const { data: awards, refresh: refreshAwards } = await useFetch(
+  `/api/users/${username.value}/awards`,
 );
 
-interface AwardWithContest {
-  id: number;
-  userId: number;
-  contestId: number;
-  awardTypeId: number;
-  status: string;
-  updatedAt: string;
-  contest: { id: number; title: string; description: string | null } | null;
-  awardType: { id: number; name: string } | null;
-}
+type AwardWithContest = NonNullable<typeof awards.value>[number];
+
 const { data: contests } = await useFetch("/api/contests");
-const { data: awardTypesResponse } = await useFetch("/api/award-types");
-
-const awards = computed<AwardWithContest[]>(
-  () => (awardsResponse.value as any) || [],
-);
+const { data: awardTypes } = await useFetch("/api/award-types");
 
 if (!user.value) {
-  throw createError({ statusCode: 404 });
+  throw createError({ statusCode: 404, statusMessage: "User not found" });
 }
 
 const openEdit = ref(false);
@@ -53,7 +41,7 @@ const awardForm = reactive({
   awardTypeId: undefined as number | undefined,
 });
 
-const selectedAward = ref<AwardWithContest | null>(null);
+const selectedAward = ref<AwardWithContest>();
 
 function statusColor(status: string) {
   switch (status) {
@@ -77,7 +65,7 @@ const contestItems = computed(() =>
   })),
 );
 const typeItems = computed(() =>
-  (awardTypesResponse.value || []).map((item: any) => ({
+  (awardTypes.value || []).map((item: any) => ({
     value: item.id,
     label: item.name,
   })),
@@ -119,7 +107,7 @@ function startEdit() {
 }
 
 function startAddAward() {
-  selectedAward.value = null;
+  selectedAward.value = undefined;
   awardForm.contestId = undefined;
   awardForm.awardTypeId = undefined;
   openAward.value = true;
@@ -151,7 +139,7 @@ async function saveProfile() {
       },
     });
 
-    await refresh();
+    await refreshUser();
     openEdit.value = false;
     toast.add({
       title: "Profile updated",
@@ -255,38 +243,31 @@ async function saveAward() {
         </UPageCard>
 
         <UPageCard title="奖项">
-          <UButton
-            v-if="isSelf"
-            variant="outline"
-            icon="i-lucide-plus"
-            label="添加奖项"
-            @click="startAddAward"
-          />
-
           <UPageGrid cols="1 sm:2 md:3" gap="4" class="mt-4">
-            <template v-if="awardsList.length">
-              <UPageCard
-                v-for="a in awardsList"
-                :key="a.id"
-                class="cursor-pointer"
-                @click="startEditAward(a)"
-              >
-                <template #title>
-                  {{ (a.contest as any)?.title || "未知比赛" }}
-                </template>
-                <template #description>
-                  <div class="flex flex-wrap gap-1">
-                    <UBadge>{{ a.awardType?.name || "未知类型" }}</UBadge>
-                    <UBadge :color="statusColor(a.status)" variant="outline">
-                      {{ t(`awards.status.${a.status}`) || a.status }}
-                    </UBadge>
-                  </div>
-                </template>
-              </UPageCard>
-            </template>
-            <template v-else>
-              <UEmpty title="暂无奖项" />
-            </template>
+            <UPageCard
+              class="cursor-pointer"
+              icon="i-lucide-plus"
+              description="添加奖项"
+              hightlight
+              spotlight
+              @click="startAddAward"
+            />
+            <UPageCard
+              v-for="award in awardsList"
+              :key="award.id"
+              class="cursor-pointer"
+              :title="award.contest?.title || '未知比赛'"
+              @click="startEditAward(award)"
+            >
+              <template #description>
+                <div class="flex flex-wrap gap-1">
+                  <UBadge>{{ award.awardType?.name || "未知类型" }}</UBadge>
+                  <UBadge :color="statusColor(award.status)" variant="outline">
+                    {{ t(`awards.status.${award.status}`) || award.status }}
+                  </UBadge>
+                </div>
+              </template>
+            </UPageCard>
           </UPageGrid>
         </UPageCard>
       </UPageBody>
