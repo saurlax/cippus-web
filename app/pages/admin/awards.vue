@@ -5,7 +5,7 @@ const UButton = resolveComponent("UButton");
 const { t } = useI18n();
 
 const { data: awards } = await useFetch<any>("/api/admin/awards");
-const { data: awardTypes } = await useFetch<any>("/api/award-types");
+const { data: awardTypes } = await useFetch<any>("/api/admin/award-types");
 const awardTypeItems = computed(() =>
   (awardTypes.value || []).map((item: any) => ({
     value: item.id,
