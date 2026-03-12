@@ -1,4 +1,10 @@
 <script setup lang="ts">
+const { user } = useUserSession();
+
+if (!user.value || !user.value.admin) {
+  navigateTo("/");
+}
+
 const items = [
   {
     label: "返回主站",
