@@ -7,15 +7,17 @@
       "college": "学院级"
     },
     "types": {
-      "team_first_prize": "团体一等奖",
-      "team_second_prize": "团体二等奖",
-      "team_third_prize": "团体三等奖",
-      "individual_1st": "个人一等奖",
-      "individual_2nd": "个人二等奖",
-      "individual_3rd": "个人三等奖",
-      "individual_4th": "个人四等奖",
-      "individual_5th": "个人五等奖",
-      "individual_6th": "个人六等奖"
+      "first_prize": "一等奖",
+      "second_prize": "二等奖",
+      "third_prize": "三等奖",
+      "first_place": "第一名",
+      "second_place": "第二名",
+      "third_place": "第三名",
+      "fourth_place": "第四名",
+      "fifth_place": "第五名",
+      "sixth_place": "第六名",
+      "other": "其他",
+      "recommended_not_awarded": "推荐但未获奖"
     },
     "status": {
       "draft": "草稿",

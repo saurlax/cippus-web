@@ -49,8 +49,8 @@ const openAward = ref(false);
 const savingAward = ref(false);
 const awardForm = reactive({
   contestId: undefined as number | undefined,
-  level: "national",
-  type: "team_first_prize",
+  level: "",
+  type: "",
 });
 
 const selectedAward = ref<AwardWithContest | null>(null);
@@ -77,10 +77,13 @@ const contestItems = computed(() =>
   })),
 );
 const levelItems = computed(() =>
-  awardLevels.map((v: string) => ({ value: v, label: t(`awards.levels.${v}`) }))
+  awardLevels.map((v: string) => ({
+    value: v,
+    label: t(`awards.levels.${v}`),
+  })),
 );
 const typeItems = computed(() =>
-  awardTypes.map((v: string) => ({ value: v, label: t(`awards.types.${v}`) }))
+  awardTypes.map((v: string) => ({ value: v, label: t(`awards.types.${v}`) })),
 );
 
 const awardsList = computed(() => awards.value || []);
@@ -121,8 +124,8 @@ function startEdit() {
 function startAddAward() {
   selectedAward.value = null;
   awardForm.contestId = undefined;
-  awardForm.level = "national";
-  awardForm.type = "team_first_prize";
+  awardForm.level = "";
+  awardForm.type = "";
   openAward.value = true;
 }
 
@@ -182,14 +185,17 @@ async function saveAward() {
   try {
     savingAward.value = true;
     if (selectedAward.value) {
-      await $fetch(`/api/users/${username.value}/awards/${selectedAward.value.id}`, {
-        method: "put" as any,
-        body: {
-          contestId: awardForm.contestId,
-          level: awardForm.level,
-          type: awardForm.type,
+      await $fetch(
+        `/api/users/${username.value}/awards/${selectedAward.value.id}`,
+        {
+          method: "put" as any,
+          body: {
+            contestId: awardForm.contestId,
+            level: awardForm.level,
+            type: awardForm.type,
+          },
         },
-      });
+      );
       toast.add({
         title: "奖项已更新，请等待审核",
         color: "success",
@@ -273,7 +279,9 @@ async function saveAward() {
                 </template>
                 <template #description>
                   <div class="flex flex-wrap gap-1">
-                    <UBadge>{{ t(`awards.levels.${a.level}`) || a.level }}</UBadge>
+                    <UBadge>{{
+                      t(`awards.levels.${a.level}`) || a.level
+                    }}</UBadge>
                     <UBadge>{{ t(`awards.types.${a.type}`) || a.type }}</UBadge>
                     <UBadge :color="statusColor(a.status)" variant="outline">
                       {{ t(`awards.status.${a.status}`) || a.status }}
@@ -368,7 +376,6 @@ async function saveAward() {
           </UFormField>
         </UForm>
       </template>
-
       <template #footer>
         <div class="flex w-full justify-end gap-2">
           <UButton

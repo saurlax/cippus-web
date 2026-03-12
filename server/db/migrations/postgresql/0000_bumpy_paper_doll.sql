@@ -1,5 +1,5 @@
 CREATE TYPE "public"."award_level" AS ENUM('national', 'provincial', 'university', 'college');--> statement-breakpoint
-CREATE TYPE "public"."award_type" AS ENUM('team_first_prize', 'team_second_prize', 'team_third_prize', 'individual_1st', 'individual_2nd', 'individual_3rd', 'individual_4th', 'individual_5th', 'individual_6th');--> statement-breakpoint
+CREATE TYPE "public"."award_type" AS ENUM('first_prize', 'second_prize', 'third_prize', 'first_place', 'second_place', 'third_place', 'fourth_place', 'fifth_place', 'sixth_place', 'other', 'recommended_not_awarded');--> statement-breakpoint
 CREATE TYPE "public"."review_status" AS ENUM('draft', 'pending', 'approved', 'rejected');--> statement-breakpoint
 CREATE TABLE "activities" (
 	"id" serial PRIMARY KEY NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE "users" (
 	"name" text,
 	"bio" text,
 	"email" text,
-	"gender" text,
+	"gender" text DEFAULT 'male' NOT NULL,
 	"college" text,
 	"admin" boolean DEFAULT false NOT NULL,
 	CONSTRAINT "users_username_unique" UNIQUE("username")

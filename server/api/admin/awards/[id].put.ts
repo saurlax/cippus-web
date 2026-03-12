@@ -4,25 +4,9 @@ import { z } from "zod";
 
 const updateSchema = z.object({
   status: z.enum(["draft", "pending", "approved", "rejected"]).optional(),
-  level: z
-    .enum(["national", "provincial", "university", "college"])
-    .optional(),
-  type: z
-    .enum([
-      "team_first_prize",
-      "team_second_prize",
-      "team_third_prize",
-      "individual_1st",
-      "individual_2nd",
-      "individual_3rd",
-      "individual_4th",
-      "individual_5th",
-      "individual_6th",
-    ])
-    .optional(),
+  level: z.string().optional(),
+  type: z.string().optional(),
 });
-
-type UpdateBody = z.infer<typeof updateSchema>;
 
 export default defineEventHandler(async (event) => {
   const idParam = getRouterParam(event, "id");

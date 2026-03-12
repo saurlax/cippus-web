@@ -1,5 +1,5 @@
 {
-  "id": "e00b384b-323f-45a0-a19a-29f84f059341",
+  "id": "b571af35-f386-4ff6-891a-a74650b92dea",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -327,7 +327,8 @@
           "name": "gender",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'male'"
         },
         "college": {
           "name": "college",
@@ -375,15 +376,17 @@
       "name": "award_type",
       "schema": "public",
       "values": [
-        "team_first_prize",
-        "team_second_prize",
-        "team_third_prize",
-        "individual_1st",
-        "individual_2nd",
-        "individual_3rd",
-        "individual_4th",
-        "individual_5th",
-        "individual_6th"
+        "first_prize",
+        "second_prize",
+        "third_prize",
+        "first_place",
+        "second_place",
+        "third_place",
+        "fourth_place",
+        "fifth_place",
+        "sixth_place",
+        "other",
+        "recommended_not_awarded"
       ]
     },
     "public.review_status": {

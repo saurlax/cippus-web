@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1772681753522,
-      "tag": "0000_smart_shard",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1772687454507,
-      "tag": "0001_next_luckman",
+      "when": 1773296387083,
+      "tag": "0000_bumpy_paper_doll",
       "breakpoints": true
     }
   ]

@@ -24,15 +24,17 @@ export const awardLevelEnum = pgEnum("award_level", [
 ]);
 
 export const awardTypeEnum = pgEnum("award_type", [
-  "team_first_prize",
-  "team_second_prize",
-  "team_third_prize",
-  "individual_1st",
-  "individual_2nd",
-  "individual_3rd",
-  "individual_4th",
-  "individual_5th",
-  "individual_6th",
+  "first_prize",
+  "second_prize",
+  "third_prize",
+  "first_place",
+  "second_place",
+  "third_place",
+  "fourth_place",
+  "fifth_place",
+  "sixth_place",
+  "other",
+  "recommended_not_awarded",
 ]);
 
 export const users = pgTable("users", {
