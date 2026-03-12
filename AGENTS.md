@@ -10,3 +10,4 @@
 - 数据库操作使用 NuxtHub 提供的 Drizzle ORM，数据库 schema 定义在 `server/db/schema.ts` 中；
 - 后端直接返回数据库返回结果就行，比如 `return db.select().from(users).where(eq(users.id, userId))`；
 - 鉴权请使用 nuxt-auth-utils 的 `await getUserSession(event)` 和 `await requireUserSession(event)`；
+- `shared/types`、`shared/utils`、`server/utils` 等目录内的文件会自动导入到全局，不需要手动导入；

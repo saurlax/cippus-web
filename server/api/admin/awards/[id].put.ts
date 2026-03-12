@@ -1,16 +1,11 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
-import { integer, pgTable, text } from "drizzle-orm/pg-core";
 import { z } from "zod";
-
-const awardTypesTable = pgTable("award_types", {
-  id: integer("id").primaryKey(),
-  name: text("name").notNull(),
-});
 
 const updateSchema = z.object({
   status: z.enum(["draft", "pending", "approved", "rejected"]).optional(),
-  awardTypeId: z.coerce.number().int().positive().optional(),
+  level: z.enum(awardLevelValues).optional(),
+  type: z.enum(awardTypeValues).optional(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -25,20 +20,9 @@ export default defineEventHandler(async (event) => {
 
   const body = updateSchema.parse(await readBody(event));
 
-  if (body.awardTypeId) {
-    const [awardType] = await db
-      .select({ id: awardTypesTable.id })
-      .from(awardTypesTable)
-      .where(eq(awardTypesTable.id, body.awardTypeId))
-      .limit(1);
-    if (!awardType) {
-      throw createError({ statusCode: 400, statusMessage: "Invalid award type" });
-    }
-  }
-
   const [updated] = await db
     .update(schema.awards)
-    .set(body as any)
+    .set(body)
     .where(eq(schema.awards.id, awardId))
     .returning();
 

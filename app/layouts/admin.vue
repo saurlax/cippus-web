@@ -41,12 +41,6 @@ const items = [
     to: "/admin/awards",
     value: "awards",
   },
-  {
-    label: "奖项类型管理",
-    icon: "i-lucide-list-checks",
-    to: "/admin/award-types",
-    value: "award-types",
-  },
 ];
 </script>
 

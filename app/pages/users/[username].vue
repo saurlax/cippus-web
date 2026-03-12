@@ -17,7 +17,6 @@ const { data: awards, refresh: refreshAwards } = await useFetch(
 type AwardWithContest = NonNullable<typeof awards.value>[number];
 
 const { data: contests } = await useFetch("/api/contests");
-const { data: awardTypes } = await useFetch("/api/award-types");
 
 if (!user.value) {
   throw createError({ statusCode: 404, statusMessage: "User not found" });
@@ -38,7 +37,8 @@ const openAward = ref(false);
 const savingAward = ref(false);
 const awardForm = reactive({
   contestId: undefined as number | undefined,
-  awardTypeId: undefined as number | undefined,
+  level: undefined as AwardLevel | undefined,
+  type: undefined as AwardType | undefined,
 });
 
 const selectedAward = ref<AwardWithContest>();
@@ -64,12 +64,14 @@ const contestItems = computed(() =>
     value: c.id,
   })),
 );
-const typeItems = computed(() =>
-  (awardTypes.value || []).map((item: any) => ({
-    value: item.id,
-    label: item.name,
-  })),
-);
+const levelItems = awardLevelValues.map((v) => ({
+  value: v,
+  label: t(`awards.level.${v}`),
+}));
+const typeItems = awardTypeValues.map((v) => ({
+  value: v,
+  label: t(`awards.type.${v}`),
+}));
 
 const awardsList = computed(() => awards.value || []);
 
@@ -109,14 +111,16 @@ function startEdit() {
 function startAddAward() {
   selectedAward.value = undefined;
   awardForm.contestId = undefined;
-  awardForm.awardTypeId = undefined;
+  awardForm.level = undefined;
+  awardForm.type = undefined;
   openAward.value = true;
 }
 
 function startEditAward(a: AwardWithContest) {
   selectedAward.value = a;
   awardForm.contestId = a.contestId;
-  awardForm.awardTypeId = a.awardTypeId;
+  awardForm.level = a.level as AwardLevel;
+  awardForm.type = a.type as AwardType;
   openAward.value = true;
 }
 
@@ -165,7 +169,11 @@ async function saveAward() {
     toast.add({ title: "请选择比赛", color: "warning" });
     return;
   }
-  if (!awardForm.awardTypeId) {
+  if (!awardForm.level) {
+    toast.add({ title: "请选择奖项级别", color: "warning" });
+    return;
+  }
+  if (!awardForm.type) {
     toast.add({ title: "请选择奖项类型", color: "warning" });
     return;
   }
@@ -178,7 +186,8 @@ async function saveAward() {
           method: "put" as any,
           body: {
             contestId: awardForm.contestId,
-            awardTypeId: awardForm.awardTypeId,
+            level: awardForm.level,
+            type: awardForm.type,
           },
         },
       );
@@ -192,7 +201,8 @@ async function saveAward() {
         method: "post",
         body: {
           contestId: awardForm.contestId,
-          awardTypeId: awardForm.awardTypeId,
+          level: awardForm.level,
+          type: awardForm.type,
         },
       });
       toast.add({
@@ -261,7 +271,8 @@ async function saveAward() {
             >
               <template #description>
                 <div class="flex flex-wrap gap-1">
-                  <UBadge>{{ award.awardType?.name || "未知类型" }}</UBadge>
+                  <UBadge v-if="award.level">{{ t(`awards.level.${award.level}`) }}</UBadge>
+                  <UBadge v-if="award.type">{{ t(`awards.type.${award.type}`) }}</UBadge>
                   <UBadge :color="statusColor(award.status)" variant="outline">
                     {{ t(`awards.status.${award.status}`) || award.status }}
                   </UBadge>
@@ -333,10 +344,18 @@ async function saveAward() {
               placeholder="请选择比赛"
             />
           </UFormField>
+          <UFormField label="级别" name="level">
+            <USelect
+              v-model="awardForm.level"
+              :items="levelItems"
+              class="w-full"
+              placeholder="请选择级别"
+            />
+          </UFormField>
           <UFormField label="类型" name="type">
             <USelect
-              v-model="awardForm.awardTypeId as any"
-              :items="typeItems as any"
+              v-model="awardForm.type"
+              :items="typeItems"
               class="w-full"
               placeholder="请选择类型"
             />

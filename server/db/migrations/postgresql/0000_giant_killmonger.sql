@@ -1,4 +1,4 @@
-CREATE TYPE "public"."award_level" AS ENUM('national', 'provincial', 'university', 'college');--> statement-breakpoint
+CREATE TYPE "public"."award_level" AS ENUM('national', 'provincial', 'municipal', 'school', 'college');--> statement-breakpoint
 CREATE TYPE "public"."award_type" AS ENUM('first_prize', 'second_prize', 'third_prize', 'first_place', 'second_place', 'third_place', 'fourth_place', 'fifth_place', 'sixth_place', 'other', 'recommended_not_awarded');--> statement-breakpoint
 CREATE TYPE "public"."review_status" AS ENUM('draft', 'pending', 'approved', 'rejected');--> statement-breakpoint
 CREATE TABLE "activities" (
@@ -58,5 +58,7 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_username_unique" UNIQUE("username")
 );
 --> statement-breakpoint
-ALTER TABLE "applications" ADD CONSTRAINT "applications_activity_id_activities_id_fk" FOREIGN KEY ("activity_id") REFERENCES "public"."activities"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "applications" ADD CONSTRAINT "applications_award_id_awards_id_fk" FOREIGN KEY ("award_id") REFERENCES "public"."awards"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "applications" ADD CONSTRAINT "applications_activity_id_activities_id_fk" FOREIGN KEY ("activity_id") REFERENCES "public"."activities"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE "applications" ADD CONSTRAINT "applications_award_id_awards_id_fk" FOREIGN KEY ("award_id") REFERENCES "public"."awards"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE "awards" ADD CONSTRAINT "awards_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE "awards" ADD CONSTRAINT "awards_contest_id_contests_id_fk" FOREIGN KEY ("contest_id") REFERENCES "public"."contests"("id") ON DELETE cascade ON UPDATE cascade;

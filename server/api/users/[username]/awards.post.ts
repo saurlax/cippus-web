@@ -1,16 +1,11 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
-import { integer, pgTable, text } from "drizzle-orm/pg-core";
 import { z } from "zod";
-
-const awardTypesTable = pgTable("award_types", {
-  id: integer("id").primaryKey(),
-  name: text("name").notNull(),
-});
 
 const createSchema = z.object({
   contestId: z.coerce.number().int().positive(),
-  awardTypeId: z.coerce.number().int().positive(),
+  level: z.enum(awardLevelValues),
+  type: z.enum(awardTypeValues),
 });
 
 export default defineEventHandler(async (event) => {
@@ -25,9 +20,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = createSchema.parse(await readBody(event));
-  const { contestId, awardTypeId } = body;
+  const { contestId, level, type } = body;
 
-  // validate contest exists
   const contest = await db.query.contests.findFirst({
     where: eq(schema.contests.id, contestId),
     columns: { id: true },
@@ -36,16 +30,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "Invalid contest" });
   }
 
-  const [awardType] = await db
-    .select({ id: awardTypesTable.id })
-    .from(awardTypesTable)
-    .where(eq(awardTypesTable.id, awardTypeId))
-    .limit(1);
-  if (!awardType) {
-    throw createError({ statusCode: 400, statusMessage: "Invalid award type" });
-  }
-
-  // find user id
   const user = await db.query.users.findFirst({
     where: eq(schema.users.username, username),
     columns: { id: true },
@@ -56,11 +40,7 @@ export default defineEventHandler(async (event) => {
 
   const [award] = await db
     .insert(schema.awards)
-    .values([{
-      userId: user.id,
-      contestId,
-      awardTypeId,
-    } as any])
+    .values([{ userId: user.id, contestId, level, type }])
     .returning();
 
   return award;

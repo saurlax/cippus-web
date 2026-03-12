@@ -1,5 +1,5 @@
 {
-  "id": "b571af35-f386-4ff6-891a-a74650b92dea",
+  "id": "35460e2b-c6dd-4922-9f23-16e349b9e10d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -104,8 +104,8 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         },
         "applications_award_id_awards_id_fk": {
           "name": "applications_award_id_awards_id_fk",
@@ -117,8 +117,8 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -180,7 +180,34 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "awards_user_id_users_id_fk": {
+          "name": "awards_user_id_users_id_fk",
+          "tableFrom": "awards",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "awards_contest_id_contests_id_fk": {
+          "name": "awards_contest_id_contests_id_fk",
+          "tableFrom": "awards",
+          "tableTo": "contests",
+          "columnsFrom": [
+            "contest_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -368,7 +395,8 @@
       "values": [
         "national",
         "provincial",
-        "university",
+        "municipal",
+        "school",
         "college"
       ]
     },

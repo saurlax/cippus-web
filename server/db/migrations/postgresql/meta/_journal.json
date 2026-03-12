@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1773296387083,
-      "tag": "0000_bumpy_paper_doll",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1773298853760,
-      "tag": "0001_careless_overlord",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1773318770520,
-      "tag": "0002_lethal_gideon",
+      "when": 1773325632032,
+      "tag": "0000_giant_killmonger",
       "breakpoints": true
     }
   ]

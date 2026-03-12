@@ -5,31 +5,37 @@ const { t } = useI18n();
 
 const { data: awards } = await useFetch<any>("/api/admin/awards");
 
-const { data: awardTypes } = await useFetch<any>("/api/admin/award-types");
-const awardTypeItems = computed(() =>
-  (awardTypes.value || []).map((item: any) => ({
-    value: item.id,
-    label: item.name,
-  })),
-);
+const levelItems = awardLevelValues.map((v) => ({
+  value: v,
+  label: t(`awards.level.${v}`),
+}));
+const typeItems = awardTypeValues.map((v) => ({
+  value: v,
+  label: t(`awards.type.${v}`),
+}));
+const statusItems = ["draft", "pending", "approved", "rejected"].map((v) => ({
+  value: v,
+  label: t(`awards.status.${v}`),
+}));
+
 const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "user.username", header: "用户" },
   { accessorKey: "contest.title", header: "比赛" },
   {
+    accessorKey: "level",
+    header: "级别",
+    cell: ({ row }: any) => t(`awards.level.${row.original.level}`),
+  },
+  {
     accessorKey: "type",
     header: "类型",
-    cell: ({ row }: any) => {
-      return row.original.awardType?.name || "-";
-    },
+    cell: ({ row }: any) => t(`awards.type.${row.original.type}`),
   },
   {
     accessorKey: "status",
     header: "状态",
-    cell: ({ row }: any) => {
-      const st = row.original.status;
-      return t(`awards.status.${st}`) || st;
-    },
+    cell: ({ row }: any) => t(`awards.status.${row.original.status}`),
   },
   { accessorKey: "updatedAt", header: "更新时间" },
   {
@@ -71,7 +77,8 @@ const columns = [
             currentAward.value = {
               id: item.id,
               status: item.status,
-              awardTypeId: item.awardTypeId,
+              level: item.level,
+              type: item.type,
             };
             openModal.value = true;
           },
@@ -90,7 +97,8 @@ async function editAward() {
       method: "put",
       body: {
         status: currentAward.value.status,
-        awardTypeId: currentAward.value.awardTypeId,
+        level: currentAward.value.level,
+        type: currentAward.value.type,
       },
     });
     openModal.value = false;
@@ -100,35 +108,31 @@ async function editAward() {
 </script>
 
 <template>
-  <UDashboardNavbar title="奖项管理">
-    <template #right>
-      <!-- no create button for now -->
-    </template>
-  </UDashboardNavbar>
+  <UDashboardNavbar title="奖项管理"></UDashboardNavbar>
   <UTable :data="awards" :columns />
 
   <UModal v-model:open="openModal" title="编辑奖项">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit.prevent="editAward">
+        <UFormField label="级别" name="level">
+          <USelect
+            class="w-full"
+            v-model="currentAward.level"
+            :items="levelItems as any"
+          />
+        </UFormField>
         <UFormField label="类型" name="type">
           <USelect
             class="w-full"
-            v-model="currentAward.awardTypeId"
-            :items="awardTypeItems as any"
+            v-model="currentAward.type"
+            :items="typeItems as any"
           />
         </UFormField>
         <UFormField label="状态" name="status">
           <USelect
             class="w-full"
             v-model="currentAward.status"
-            :items="
-              [
-                { label: t('awards.status.draft'), value: 'draft' },
-                { label: t('awards.status.pending'), value: 'pending' },
-                { label: t('awards.status.approved'), value: 'approved' },
-                { label: t('awards.status.rejected'), value: 'rejected' },
-              ] as any
-            "
+            :items="statusItems as any"
           />
         </UFormField>
       </UForm>
