@@ -60,11 +60,24 @@ export const awardTypes = pgTable("award_types", {
 
 export const awards = pgTable("awards", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  contestId: integer("contest_id").notNull(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  contestId: integer("contest_id")
+    .notNull()
+    .references(() => contests.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
   awardTypeId: integer("award_type_id")
     .notNull()
-    .references(() => awardTypes.id),
+    .references(() => awardTypes.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
   status: reviewStatusEnum("status").notNull().default("draft"),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
@@ -84,10 +97,16 @@ export const applications = pgTable("applications", {
   id: serial("id").primaryKey(),
   activityId: integer("activity_id")
     .notNull()
-    .references(() => activities.id),
+    .references(() => activities.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
   awardId: integer("award_id")
     .notNull()
-    .references(() => awards.id),
+    .references(() => awards.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
   status: reviewStatusEnum("status").notNull().default("draft"),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "date" })
