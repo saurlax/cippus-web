@@ -26,5 +26,26 @@
       "other": "其他",
       "recommended_not_awarded": "推荐但未获奖"
     }
+  },
+  "papers": {
+    "type": {
+      "influential": "有较大影响力的",
+      "other": "其他"
+    }
+  },
+  "patents": {
+    "type": {
+      "domestic_invention": "国内发明专利",
+      "international_invention": "国际发明专利",
+      "utility_model": "实用新型专利",
+      "design": "外观型专利",
+      "software_copyright": "软件著作权"
+    }
+  },
+  "innovations": {
+    "type": {
+      "excellent": "优秀",
+      "qualified": "合格"
+    }
   }
 }

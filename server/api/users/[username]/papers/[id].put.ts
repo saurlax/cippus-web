@@ -3,9 +3,8 @@ import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
 
 const updateSchema = z.object({
-  contestId: z.coerce.number().int().positive().optional(),
-  level: z.enum(awardLevelValues).optional(),
-  type: z.enum(awardTypeValues).optional(),
+  name: z.string().trim().min(1).optional(),
+  type: z.enum(paperTypeValues).optional(),
   date: z.coerce.date().optional(),
 });
 
@@ -21,10 +20,10 @@ export default defineEventHandler(async (event) => {
     columns: { id: true },
   });
   const body = updateSchema.parse(await readBody(event));
-  const [updated] = await db
-    .update(schema.awards)
+  const [paper] = await db
+    .update(schema.papers)
     .set({ ...body, status: "draft" })
-    .where(and(eq(schema.awards.id, id), eq(schema.awards.userId, user!.id)))
+    .where(and(eq(schema.papers.id, id), eq(schema.papers.userId, user!.id)))
     .returning();
-  return updated;
+  return paper;
 });

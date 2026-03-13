@@ -14,13 +14,15 @@ export default defineEventHandler(async (event) => {
     const user = await db.query.users.findFirst({
       where: eq(schema.users.username, username),
     });
+    const sessionName = name ?? user?.name ?? null;
+    const sessionAdmin = user?.admin ?? false;
 
     if (!user) {
-      await db.insert(schema.users).values({ username, name });
+      await db.insert(schema.users).values({ username, name: name ?? null });
     }
 
     await setUserSession(event, {
-      user: { username, name, admin: user?.admin },
+      user: { username, name: sessionName, admin: sessionAdmin },
     });
     return sendRedirect(event, "/");
   }

@@ -41,6 +41,24 @@ const items = [
     to: "/admin/awards",
     value: "awards",
   },
+  {
+    label: "论文管理",
+    icon: "i-lucide-file-text",
+    to: "/admin/papers",
+    value: "papers",
+  },
+  {
+    label: "专利管理",
+    icon: "i-lucide-copyright",
+    to: "/admin/patents",
+    value: "patents",
+  },
+  {
+    label: "大创管理",
+    icon: "i-lucide-lightbulb",
+    to: "/admin/innovations",
+    value: "innovations",
+  },
 ];
 </script>
 

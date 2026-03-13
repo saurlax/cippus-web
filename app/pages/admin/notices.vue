@@ -2,7 +2,9 @@
 const UButton = resolveComponent("UButton");
 const toast = useToast();
 
-const { data: notices } = await useFetch("/api/admin/notices");
+const { data: notices, refresh: refreshNotices } = await useFetch(
+  "/api/admin/notices"
+);
 const confirmDeleteOpen = ref(false);
 const deletingNotice = ref<any>(null);
 
@@ -21,7 +23,7 @@ async function confirmDeleteNotice() {
     await $fetch(`/api/admin/notices/${item.id}`, {
       method: "delete",
     });
-    notices.value = await $fetch("/api/admin/notices");
+    await refreshNotices();
     toast.add({ title: "删除成功", color: "success" });
     confirmDeleteOpen.value = false;
     deletingNotice.value = null;
@@ -95,7 +97,7 @@ async function updateNotice() {
       });
     }
   }
-  notices.value = await $fetch<any>("/api/admin/notices");
+  await refreshNotices();
   openModal.value = false;
 }
 </script>

@@ -3,9 +3,9 @@ import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
 
 const updateSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  type: z.enum(patentTypeValues).optional(),
   status: z.enum(reviewStatusValues).optional(),
-  level: z.enum(awardLevelValues).optional(),
-  type: z.enum(awardTypeValues).optional(),
   date: z.coerce.date().optional(),
 });
 
@@ -13,9 +13,9 @@ export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, "id"));
   const body = updateSchema.parse(await readBody(event));
   const [updated] = await db
-    .update(schema.awards)
+    .update(schema.patents)
     .set(body)
-    .where(eq(schema.awards.id, id))
+    .where(eq(schema.patents.id, id))
     .returning();
   return updated;
 });

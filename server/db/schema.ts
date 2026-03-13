@@ -38,6 +38,24 @@ export const awardTypeEnum = pgEnum("award_type", [
   "recommended_not_awarded",
 ]);
 
+export const paperTypeEnum = pgEnum("paper_type", [
+  "influential",
+  "other",
+]);
+
+export const patentTypeEnum = pgEnum("patent_type", [
+  "domestic_invention",
+  "international_invention",
+  "utility_model",
+  "design",
+  "software_copyright",
+]);
+
+export const innovationTypeEnum = pgEnum("innovation_type", [
+  "excellent",
+  "qualified",
+]);
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -45,9 +63,7 @@ export const users = pgTable("users", {
   name: text("name"),
   bio: text("bio"),
   email: text("email"),
-  gender: text("gender", { enum: ["male", "female"] })
-    .notNull()
-    .default("male"),
+  gender: text("gender", { enum: ["male", "female"] }),
   college: text("college"),
   admin: boolean("admin").notNull().default(false),
 });
@@ -92,6 +108,61 @@ export const awards = pgTable("awards", {
   level: awardLevelEnum("level").notNull(),
   type: awardTypeEnum("type").notNull(),
   status: reviewStatusEnum("status").notNull().default("draft"),
+  date: timestamp("date", { mode: "date" }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "date" })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export const papers = pgTable("papers", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  name: text("name").notNull(),
+  type: paperTypeEnum("type").notNull(),
+  status: reviewStatusEnum("status").notNull().default("draft"),
+  date: timestamp("date", { mode: "date" }).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export const patents = pgTable("patents", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  name: text("name").notNull(),
+  type: patentTypeEnum("type").notNull(),
+  status: reviewStatusEnum("status").notNull().default("draft"),
+  date: timestamp("date", { mode: "date" }).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export const innovations = pgTable("innovations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  name: text("name").notNull(),
+  type: innovationTypeEnum("type").notNull(),
+  status: reviewStatusEnum("status").notNull().default("draft"),
+  date: timestamp("date", { mode: "date" }).notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
     .defaultNow()
@@ -143,6 +214,30 @@ export const awardsRelations = relations(awards, ({ many, one }) => ({
     references: [users.id],
   }),
 }));
+
+export const papersRelations = relations(papers, ({ one }) => ({
+  user: one(users, {
+    fields: [papers.userId],
+    references: [users.id],
+  }),
+}));
+
+export const patentsRelations = relations(patents, ({ one }) => ({
+  user: one(users, {
+    fields: [patents.userId],
+    references: [users.id],
+  }),
+}));
+
+export const innovationsRelations = relations(
+  innovations,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [innovations.userId],
+      references: [users.id],
+    }),
+  }),
+);
 
 export const applicationsRelations = relations(applications, ({ one }) => ({
   activity: one(activities, {

@@ -3,7 +3,7 @@ const UButton = resolveComponent("UButton");
 
 const { t } = useI18n();
 
-const { data: awards, refresh } = await useFetch<any[]>("/api/admin/awards");
+const { data: innovations, refresh } = await useFetch<any[]>("/api/admin/innovations");
 
 function formatDateText(value: unknown) {
   if (!value || typeof value !== "string") {
@@ -13,13 +13,9 @@ function formatDateText(value: unknown) {
   return value.slice(0, 10);
 }
 
-const levelItems = awardLevelValues.map((value) => ({
+const typeItems = innovationTypeValues.map((value) => ({
   value,
-  label: t(`awards.level.${value}`),
-}));
-const typeItems = awardTypeValues.map((value) => ({
-  value,
-  label: t(`awards.type.${value}`),
+  label: t(`innovations.type.${value}`),
 }));
 const statusItems = reviewStatusValues.map((value) => ({
   value,
@@ -29,20 +25,15 @@ const statusItems = reviewStatusValues.map((value) => ({
 const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "user.username", header: "用户" },
-  { accessorKey: "contest.title", header: "比赛" },
-  {
-    accessorKey: "level",
-    header: "级别",
-    cell: ({ row }: any) => t(`awards.level.${row.original.level}`),
-  },
+  { accessorKey: "name", header: "名称" },
   {
     accessorKey: "type",
     header: "类型",
-    cell: ({ row }: any) => t(`awards.type.${row.original.type}`),
+    cell: ({ row }: any) => t(`innovations.type.${row.original.type}`),
   },
   {
     accessorKey: "date",
-    header: "获奖时间",
+    header: "时间",
     cell: ({ row }: any) => formatDateText(row.original.date),
   },
   {
@@ -61,7 +52,7 @@ const columns = [
       const item = row.original;
 
       const approve = async () => {
-        await $fetch(`/api/admin/awards/${item.id}`, {
+        await $fetch(`/api/admin/innovations/${item.id}`, {
           method: "put",
           body: { status: "approved" },
         });
@@ -69,7 +60,7 @@ const columns = [
       };
 
       const reject = async () => {
-        await $fetch(`/api/admin/awards/${item.id}`, {
+        await $fetch(`/api/admin/innovations/${item.id}`, {
           method: "put",
           body: { status: "rejected" },
         });
@@ -94,12 +85,12 @@ const columns = [
           icon: "i-lucide-pencil",
           variant: "ghost",
           onClick: () => {
-            currentAward.value = {
+            currentInnovation.value = {
               id: item.id,
-              status: item.status,
-              level: item.level,
+              name: item.name,
               type: item.type,
               date: formatDateText(item.date),
+              status: item.status,
             };
             openModal.value = true;
           },
@@ -110,20 +101,20 @@ const columns = [
 ];
 
 const openModal = ref(false);
-const currentAward = ref<any>({});
+const currentInnovation = ref<any>({});
 
-async function editAward() {
-  if (!currentAward.value?.id) {
+async function editInnovation() {
+  if (!currentInnovation.value?.id) {
     return;
   }
 
-  await $fetch(`/api/admin/awards/${currentAward.value.id}`, {
+  await $fetch(`/api/admin/innovations/${currentInnovation.value.id}`, {
     method: "put",
     body: {
-      status: currentAward.value.status,
-      level: currentAward.value.level,
-      type: currentAward.value.type,
-      date: currentAward.value.date,
+      name: currentInnovation.value.name,
+      type: currentInnovation.value.type,
+      date: currentInnovation.value.date,
+      status: currentInnovation.value.status,
     },
   });
 
@@ -133,32 +124,28 @@ async function editAward() {
 </script>
 
 <template>
-  <UDashboardNavbar title="奖项管理"></UDashboardNavbar>
-  <UTable :data="awards" :columns />
+  <UDashboardNavbar title="大创管理"></UDashboardNavbar>
+  <UTable :data="innovations" :columns />
 
-  <UModal v-model:open="openModal" title="编辑奖项">
+  <UModal v-model:open="openModal" title="编辑大创">
     <template #body>
-      <UForm class="flex flex-col gap-2" @submit.prevent="editAward">
-        <UFormField label="级别" name="level" required>
-          <USelect
-            v-model="currentAward.level"
-            class="w-full"
-            :items="levelItems as any"
-          />
+      <UForm class="flex flex-col gap-2" @submit.prevent="editInnovation">
+        <UFormField label="名称" name="name" required>
+          <UInput v-model="currentInnovation.name" class="w-full" />
         </UFormField>
         <UFormField label="类型" name="type" required>
           <USelect
-            v-model="currentAward.type"
+            v-model="currentInnovation.type"
             class="w-full"
             :items="typeItems as any"
           />
         </UFormField>
-        <UFormField label="获奖时间" name="date" required>
-          <UInput v-model="currentAward.date" class="w-full" type="date" />
+        <UFormField label="时间" name="date" required>
+          <UInput v-model="currentInnovation.date" class="w-full" type="date" />
         </UFormField>
         <UFormField label="状态" name="status" required>
           <USelect
-            v-model="currentAward.status"
+            v-model="currentInnovation.status"
             class="w-full"
             :items="statusItems as any"
           />
@@ -166,7 +153,7 @@ async function editAward() {
       </UForm>
     </template>
     <template #footer>
-      <UButton @click="editAward">保存</UButton>
+      <UButton @click="editInnovation">保存</UButton>
     </template>
   </UModal>
 </template>
