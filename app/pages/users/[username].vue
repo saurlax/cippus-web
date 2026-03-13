@@ -34,6 +34,7 @@ type PaperRecord = NonNullable<typeof papers.value>[number];
 type PatentRecord = NonNullable<typeof patents.value>[number];
 type InnovationRecord = NonNullable<typeof innovations.value>[number];
 type RecordKind = "paper" | "patent" | "innovation";
+type UserSubmitStatus = "draft" | "pending";
 
 if (!user.value) {
   throw createError({ statusCode: 404, statusMessage: "User not found" });
@@ -58,17 +59,22 @@ const awardForm = reactive({
   level: undefined as AwardLevel | undefined,
   type: undefined as AwardType | undefined,
   date: "",
+  evidences: [] as string[],
 });
+const awardUploadFiles = ref<File[]>([]);
 
 const openRecord = ref(false);
 const savingRecord = ref(false);
 const currentRecordKind = ref<RecordKind>("paper");
 const selectedRecordId = ref<number>();
+const selectedRecordStatus = ref<string>();
 const recordForm = reactive({
   name: "",
   type: undefined as PaperType | PatentType | InnovationType | undefined,
   date: "",
+  evidences: [] as string[],
 });
+const recordUploadFiles = ref<File[]>([]);
 
 const genderItems = ref([
   { label: "男", value: "male" },
@@ -177,6 +183,31 @@ function statusColor(status: string) {
   }
 }
 
+async function uploadEvidences(files: File[]) {
+  if (!files.length) {
+    return [] as string[];
+  }
+
+  const uploaded: string[] = [];
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append("username", username.value);
+    formData.append("file", file);
+
+    const result = await $fetch<{ pathname: string }>("/api/blob/upload", {
+      method: "post",
+      body: formData,
+    });
+    uploaded.push(result.pathname);
+  }
+
+  return uploaded;
+}
+
+function removeEvidence(list: string[], index: number) {
+  list.splice(index, 1);
+}
+
 function getRecordTypeLabel(kind: RecordKind, value: string) {
   switch (kind) {
     case "paper":
@@ -208,6 +239,8 @@ function startAddAward() {
   awardForm.level = undefined;
   awardForm.type = undefined;
   awardForm.date = "";
+  awardForm.evidences = [];
+  awardUploadFiles.value = [];
   openAward.value = true;
 }
 
@@ -221,6 +254,8 @@ function startEditAward(award: AwardWithContest) {
   awardForm.level = award.level as AwardLevel;
   awardForm.type = award.type as AwardType;
   awardForm.date = normalizeDateText(award.date);
+  awardForm.evidences = [...(award.evidences || [])];
+  awardUploadFiles.value = [];
   openAward.value = true;
 }
 
@@ -234,6 +269,7 @@ function startRecord(
 
   currentRecordKind.value = kind;
   selectedRecordId.value = item?.id;
+  selectedRecordStatus.value = item?.status;
   recordForm.name = item?.name || "";
   recordForm.type = (item?.type || undefined) as
     | PaperType
@@ -241,6 +277,8 @@ function startRecord(
     | InnovationType
     | undefined;
   recordForm.date = normalizeDateText(item?.date);
+  recordForm.evidences = [...((item?.evidences as string[] | undefined) || [])];
+  recordUploadFiles.value = [];
   openRecord.value = true;
 }
 
@@ -270,9 +308,10 @@ async function saveProfile() {
       color: "success",
       icon: "i-lucide-check",
     });
-  } catch {
+  } catch (e: any) {
     toast.add({
       title: "更新失败",
+      description: e?.data?.message || e?.message,
       color: "error",
       icon: "i-lucide-circle-alert",
     });
@@ -281,7 +320,7 @@ async function saveProfile() {
   }
 }
 
-async function saveAward() {
+async function saveAward(status: UserSubmitStatus) {
   if (savingAward.value) {
     return;
   }
@@ -304,6 +343,8 @@ async function saveAward() {
 
   try {
     savingAward.value = true;
+    const uploadedEvidences = await uploadEvidences(awardUploadFiles.value);
+    const evidences = [...awardForm.evidences, ...uploadedEvidences];
 
     if (selectedAward.value) {
       await $fetch(
@@ -315,11 +356,13 @@ async function saveAward() {
             level: awardForm.level,
             type: awardForm.type,
             date: awardForm.date,
+            evidences,
+            status,
           },
         },
       );
       toast.add({
-        title: "奖项已更新，请等待审核",
+        title: "奖项已更新并提交审核",
         color: "success",
         icon: "i-lucide-check",
       });
@@ -331,20 +374,24 @@ async function saveAward() {
           level: awardForm.level,
           type: awardForm.type,
           date: awardForm.date,
+          evidences,
+          status,
         },
       });
       toast.add({
-        title: "奖项已添加",
+        title: status === "pending" ? "奖项已提交审核" : "奖项草稿已保存",
         color: "success",
         icon: "i-lucide-check",
       });
     }
 
     await refreshAwards();
+    awardUploadFiles.value = [];
     openAward.value = false;
-  } catch {
+  } catch (e: any) {
     toast.add({
       title: selectedAward.value ? "更新失败" : "添加失败",
+      description: e?.data?.message || e?.message,
       color: "error",
       icon: "i-lucide-circle-alert",
     });
@@ -399,6 +446,8 @@ async function saveRecord() {
 
   try {
     savingRecord.value = true;
+    const uploadedEvidences = await uploadEvidences(recordUploadFiles.value);
+    const evidences = [...recordForm.evidences, ...uploadedEvidences];
 
     if (selectedRecordId.value) {
       await $fetch(
@@ -409,11 +458,13 @@ async function saveRecord() {
             name: recordForm.name,
             type: recordForm.type,
             date: recordForm.date,
+            evidences,
+            status: "pending",
           },
         },
       );
       toast.add({
-        title: `${currentRecordSectionTitle.value}已更新，请等待审核`,
+        title: `${currentRecordSectionTitle.value}已更新并提交审核`,
         color: "success",
         icon: "i-lucide-check",
       });
@@ -424,20 +475,80 @@ async function saveRecord() {
           name: recordForm.name,
           type: recordForm.type,
           date: recordForm.date,
+          evidences,
+          status: "pending",
         },
       });
       toast.add({
-        title: `${currentRecordSectionTitle.value}已添加`,
+        title: `${currentRecordSectionTitle.value}已提交审核`,
         color: "success",
         icon: "i-lucide-check",
       });
     }
 
     await refreshRecordList(currentRecordKind.value);
+    recordUploadFiles.value = [];
     openRecord.value = false;
-  } catch {
+  } catch (e: any) {
     toast.add({
       title: selectedRecordId.value ? "更新失败" : "添加失败",
+      description: e?.data?.message || e?.message,
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    savingRecord.value = false;
+  }
+}
+
+async function saveRecordDraft() {
+  if (savingRecord.value) {
+    return;
+  }
+  if (!recordForm.name.trim()) {
+    toast.add({ title: "请输入名称", color: "warning" });
+    return;
+  }
+  if (!recordForm.type) {
+    toast.add({ title: "请选择类型", color: "warning" });
+    return;
+  }
+  if (!recordForm.date) {
+    toast.add({ title: "请选择时间", color: "warning" });
+    return;
+  }
+
+  const path = getRecordPath(currentRecordKind.value);
+
+  try {
+    savingRecord.value = true;
+    const uploadedEvidences = await uploadEvidences(recordUploadFiles.value);
+    const evidences = [...recordForm.evidences, ...uploadedEvidences];
+
+    await $fetch(`/api/users/${username.value}/${path}`, {
+      method: "post",
+      body: {
+        name: recordForm.name,
+        type: recordForm.type,
+        date: recordForm.date,
+        evidences,
+        status: "draft",
+      },
+    });
+
+    toast.add({
+      title: `${currentRecordSectionTitle.value}草稿已保存`,
+      color: "success",
+      icon: "i-lucide-check",
+    });
+
+    await refreshRecordList(currentRecordKind.value);
+    recordUploadFiles.value = [];
+    openRecord.value = false;
+  } catch (e: any) {
+    toast.add({
+      title: "保存失败",
+      description: e?.data?.message || e?.message,
       color: "error",
       icon: "i-lucide-circle-alert",
     });
@@ -494,9 +605,7 @@ async function saveRecord() {
               <template #description>
                 <div class="space-y-2">
                   <p class="text-sm text-muted">
-                    获奖时间：{{
-                      normalizeDateText(award.date)
-                    }}
+                    获奖时间：{{ normalizeDateText(award.date) }}
                   </p>
                   <div class="flex flex-wrap gap-1">
                     <UBadge v-if="award.level">{{
@@ -505,6 +614,13 @@ async function saveRecord() {
                     <UBadge v-if="award.type">{{
                       t(`awards.type.${award.type}`)
                     }}</UBadge>
+                    <UBadge
+                      v-if="(award.evidences || []).length"
+                      color="neutral"
+                      variant="outline"
+                    >
+                      附件 {{ (award.evidences || []).length }}
+                    </UBadge>
                     <UBadge
                       :color="statusColor(award.status)"
                       variant="outline"
@@ -538,12 +654,17 @@ async function saveRecord() {
               <template #description>
                 <div class="space-y-2">
                   <p class="text-sm text-muted">
-                    时间：{{
-                      normalizeDateText(paper.date)
-                    }}
+                    时间：{{ normalizeDateText(paper.date) }}
                   </p>
                   <div class="flex flex-wrap gap-1">
                     <UBadge>{{ t(`papers.type.${paper.type}`) }}</UBadge>
+                    <UBadge
+                      v-if="(paper.evidences || []).length"
+                      color="neutral"
+                      variant="outline"
+                    >
+                      附件 {{ (paper.evidences || []).length }}
+                    </UBadge>
                     <UBadge
                       :color="statusColor(paper.status)"
                       variant="outline"
@@ -577,12 +698,17 @@ async function saveRecord() {
               <template #description>
                 <div class="space-y-2">
                   <p class="text-sm text-muted">
-                    时间：{{
-                      normalizeDateText(patent.date)
-                    }}
+                    时间：{{ normalizeDateText(patent.date) }}
                   </p>
                   <div class="flex flex-wrap gap-1">
                     <UBadge>{{ t(`patents.type.${patent.type}`) }}</UBadge>
+                    <UBadge
+                      v-if="(patent.evidences || []).length"
+                      color="neutral"
+                      variant="outline"
+                    >
+                      附件 {{ (patent.evidences || []).length }}
+                    </UBadge>
                     <UBadge
                       :color="statusColor(patent.status)"
                       variant="outline"
@@ -616,14 +742,19 @@ async function saveRecord() {
               <template #description>
                 <div class="space-y-2">
                   <p class="text-sm text-muted">
-                    时间：{{
-                      normalizeDateText(innovation.date)
-                    }}
+                    时间：{{ normalizeDateText(innovation.date) }}
                   </p>
                   <div class="flex flex-wrap gap-1">
                     <UBadge>{{
                       t(`innovations.type.${innovation.type}`)
                     }}</UBadge>
+                    <UBadge
+                      v-if="(innovation.evidences || []).length"
+                      color="neutral"
+                      variant="outline"
+                    >
+                      附件 {{ (innovation.evidences || []).length }}
+                    </UBadge>
                     <UBadge
                       :color="statusColor(innovation.status)"
                       variant="outline"
@@ -690,7 +821,16 @@ async function saveRecord() {
       :title="selectedAward ? '编辑奖项' : '添加奖项'"
     >
       <template #body>
-        <UForm class="space-y-4" @submit.prevent="saveAward">
+        <UForm
+          class="space-y-4"
+          @submit.prevent="saveAward(selectedAward ? 'pending' : 'draft')"
+        >
+          <UAlert
+            v-if="selectedAward?.status === 'approved'"
+            color="warning"
+            variant="subtle"
+            title="修改已通过的奖项将会重新进入待审核状态"
+          />
           <UFormField label="比赛" name="contestId" required>
             <USelect
               v-model="awardForm.contestId"
@@ -718,6 +858,13 @@ async function saveRecord() {
           <UFormField label="获奖时间" name="date" required>
             <UInput v-model="awardForm.date" class="w-full" type="date" />
           </UFormField>
+          <UFormField label="佐证材料" name="evidences">
+            <EvidenceUpload
+              v-model="awardUploadFiles"
+              :evidences="awardForm.evidences"
+              @remove-evidence="removeEvidence(awardForm.evidences, $event)"
+            />
+          </UFormField>
         </UForm>
       </template>
       <template #footer>
@@ -728,7 +875,17 @@ async function saveRecord() {
             label="取消"
             @click="openAward = false"
           />
-          <UButton :loading="savingAward" label="保存" @click="saveAward" />
+          <UButton
+            v-if="!selectedAward"
+            :loading="savingAward"
+            label="保存"
+            @click="saveAward('draft')"
+          />
+          <UButton
+            :loading="savingAward"
+            label="保存并提交"
+            @click="saveAward('pending')"
+          />
         </div>
       </template>
     </UModal>
@@ -736,6 +893,12 @@ async function saveRecord() {
     <UModal v-model:open="openRecord" :title="currentRecordModalTitle">
       <template #body>
         <UForm class="space-y-4" @submit.prevent="saveRecord">
+          <UAlert
+            v-if="selectedRecordStatus === 'approved'"
+            color="warning"
+            variant="subtle"
+            :title="`修改已通过的${currentRecordSectionTitle}将会重新进入待审核状态`"
+          />
           <UFormField label="名称" name="name" required>
             <UInput v-model="recordForm.name" class="w-full" />
           </UFormField>
@@ -750,6 +913,13 @@ async function saveRecord() {
           <UFormField label="时间" name="date" required>
             <UInput v-model="recordForm.date" class="w-full" type="date" />
           </UFormField>
+          <UFormField label="佐证材料" name="evidences">
+            <EvidenceUpload
+              v-model="recordUploadFiles"
+              :evidences="recordForm.evidences"
+              @remove-evidence="removeEvidence(recordForm.evidences, $event)"
+            />
+          </UFormField>
         </UForm>
       </template>
       <template #footer>
@@ -760,7 +930,17 @@ async function saveRecord() {
             label="取消"
             @click="openRecord = false"
           />
-          <UButton :loading="savingRecord" label="保存" @click="saveRecord" />
+          <UButton
+            v-if="!selectedRecordId"
+            :loading="savingRecord"
+            label="保存"
+            @click="saveRecordDraft"
+          />
+          <UButton
+            :loading="savingRecord"
+            label="保存并提交"
+            @click="saveRecord"
+          />
         </div>
       </template>
     </UModal>

@@ -51,6 +51,28 @@ const columns = [
     cell: ({ row }: any) => t(`awards.status.${row.original.status}`),
   },
   {
+    accessorKey: "evidences",
+    header: "附件",
+    cell: ({ row }: any) => {
+      const evidences = (row.original.evidences || []) as string[];
+
+      return h("div", { class: "flex items-center gap-2" }, [
+        h("span", `${evidences.length} 张`),
+        h(UButton, {
+          color: "neutral",
+          variant: "outline",
+          size: "xs",
+          label: "查看",
+          disabled: !evidences.length,
+          onClick: () => {
+            previewEvidences.value = evidences;
+            openEvidenceModal.value = true;
+          },
+        }),
+      ]);
+    },
+  },
+  {
     accessorKey: "updatedAt",
     header: "更新时间",
     cell: ({ row }: any) => formatDateText(row.original.updatedAt),
@@ -100,6 +122,7 @@ const columns = [
               level: item.level,
               type: item.type,
               date: formatDateText(item.date),
+              evidences: item.evidences || [],
             };
             openModal.value = true;
           },
@@ -110,7 +133,9 @@ const columns = [
 ];
 
 const openModal = ref(false);
+const openEvidenceModal = ref(false);
 const currentAward = ref<any>({});
+const previewEvidences = ref<string[]>([]);
 
 async function editAward() {
   if (!currentAward.value?.id) {
@@ -167,6 +192,12 @@ async function editAward() {
     </template>
     <template #footer>
       <UButton @click="editAward">保存</UButton>
+    </template>
+  </UModal>
+
+  <UModal v-model:open="openEvidenceModal" title="附件预览">
+    <template #body>
+      <EvidencePreview :evidences="previewEvidences" />
     </template>
   </UModal>
 </template>

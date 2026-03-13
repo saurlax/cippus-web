@@ -6,6 +6,8 @@ const updateSchema = z.object({
   name: z.string().trim().min(1).optional(),
   type: z.enum(innovationTypeValues).optional(),
   date: z.coerce.date().optional(),
+  evidences: z.array(z.string().min(1)).optional(),
+  status: z.enum(["draft", "pending"]).optional(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -22,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const body = updateSchema.parse(await readBody(event));
   const [updated] = await db
     .update(schema.innovations)
-    .set({ ...body, status: "draft" })
+    .set(body)
     .where(and(eq(schema.innovations.id, id), eq(schema.innovations.userId, user!.id)))
     .returning();
   return updated;

@@ -17,6 +17,7 @@ export default defineNuxtConfig({
   },
   hub: {
     db: "postgresql",
+    blob: true,
   },
   i18n: {
     defaultLocale: "zh",

@@ -107,6 +107,7 @@ export const awards = pgTable("awards", {
     }),
   level: awardLevelEnum("level").notNull(),
   type: awardTypeEnum("type").notNull(),
+  evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "date" })
@@ -125,6 +126,7 @@ export const papers = pgTable("papers", {
     }),
   name: text("name").notNull(),
   type: paperTypeEnum("type").notNull(),
+  evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" })
@@ -143,6 +145,7 @@ export const patents = pgTable("patents", {
     }),
   name: text("name").notNull(),
   type: patentTypeEnum("type").notNull(),
+  evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" })
@@ -161,6 +164,7 @@ export const innovations = pgTable("innovations", {
     }),
   name: text("name").notNull(),
   type: innovationTypeEnum("type").notNull(),
+  evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" })

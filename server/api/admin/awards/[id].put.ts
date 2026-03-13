@@ -7,6 +7,7 @@ const updateSchema = z.object({
   level: z.enum(awardLevelValues).optional(),
   type: z.enum(awardTypeValues).optional(),
   date: z.coerce.date().optional(),
+  evidences: z.array(z.string().min(1)).optional(),
 });
 
 export default defineEventHandler(async (event) => {

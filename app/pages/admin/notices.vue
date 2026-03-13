@@ -30,6 +30,7 @@ async function confirmDeleteNotice() {
   } catch (error: any) {
     toast.add({
       title: error?.data?.message || error?.message || "删除失败",
+      description: error?.data?.message || error?.message,
       color: "error",
     });
   }

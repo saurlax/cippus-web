@@ -33,10 +33,14 @@ function login(payload: FormSubmitEvent<any>) {
       await fetch();
       navigateTo("/");
     })
-    .catch((err) => {
-      console.log(err);
+    .catch((e: any) => {
+      console.log(e);
       
-      toast.add({ title: err.toString(), color: "error" });
+      toast.add({
+        title: "登录失败",
+        description: e?.data?.message || e?.message,
+        color: "error",
+      });
     });
 }
 </script>

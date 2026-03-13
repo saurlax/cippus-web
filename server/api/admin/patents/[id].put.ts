@@ -7,6 +7,7 @@ const updateSchema = z.object({
   type: z.enum(patentTypeValues).optional(),
   status: z.enum(reviewStatusValues).optional(),
   date: z.coerce.date().optional(),
+  evidences: z.array(z.string().min(1)).optional(),
 });
 
 export default defineEventHandler(async (event) => {

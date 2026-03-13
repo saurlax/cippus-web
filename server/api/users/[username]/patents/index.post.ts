@@ -6,6 +6,8 @@ const createSchema = z.object({
   name: z.string().trim().min(1),
   type: z.enum(patentTypeValues),
   date: z.coerce.date(),
+  evidences: z.array(z.string().min(1)).optional(),
+  status: z.enum(["draft", "pending"]).optional(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -21,7 +23,14 @@ export default defineEventHandler(async (event) => {
   const body = createSchema.parse(await readBody(event));
   const [patent] = await db
     .insert(schema.patents)
-    .values([{ userId: user!.id, ...body }])
+    .values([
+      {
+        userId: user!.id,
+        ...body,
+        evidences: body.evidences || [],
+        status: body.status || "draft",
+      },
+    ])
     .returning();
   return patent;
 });

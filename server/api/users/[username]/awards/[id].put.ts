@@ -7,6 +7,8 @@ const updateSchema = z.object({
   level: z.enum(awardLevelValues).optional(),
   type: z.enum(awardTypeValues).optional(),
   date: z.coerce.date().optional(),
+  evidences: z.array(z.string().min(1)).optional(),
+  status: z.enum(["draft", "pending"]).optional(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -23,7 +25,7 @@ export default defineEventHandler(async (event) => {
   const body = updateSchema.parse(await readBody(event));
   const [updated] = await db
     .update(schema.awards)
-    .set({ ...body, status: "draft" })
+    .set(body)
     .where(and(eq(schema.awards.id, id), eq(schema.awards.userId, user!.id)))
     .returning();
   return updated;
