@@ -1,38 +1,7 @@
 <script setup lang="ts">
 const UButton = resolveComponent("UButton");
-const toast = useToast();
 
 const { data: activities } = await useFetch("/api/admin/activities");
-const confirmDeleteOpen = ref(false);
-const deletingActivity = ref<any>(null);
-
-function openDeleteModal(item: any) {
-  deletingActivity.value = item;
-  confirmDeleteOpen.value = true;
-}
-
-async function confirmDeleteActivity() {
-  const item = deletingActivity.value;
-  if (!item?.id) {
-    return;
-  }
-
-  try {
-    await $fetch(`/api/admin/activities/${item.id}`, {
-      method: "delete",
-    });
-    activities.value = await $fetch<any>("/api/admin/activities");
-    toast.add({ title: "删除成功", color: "success" });
-    confirmDeleteOpen.value = false;
-    deletingActivity.value = null;
-  } catch (error: any) {
-    toast.add({
-      title: error?.data?.message || error?.message || "删除失败",
-      description: error?.data?.message || error?.message,
-      color: "error",
-    });
-  }
-}
 
 const columns = [
   { accessorKey: "id", header: "#" },
@@ -45,23 +14,15 @@ const columns = [
     cell: ({ row }: any) => {
       const item = row.original;
 
-      return h("div", { class: "flex items-center gap-1" }, [
-        h(UButton, {
-          icon: "i-lucide-pencil",
-          color: "neutral",
-          variant: "ghost",
-          onClick: () => {
-            currentActivity.value = item;
-            openModal.value = true;
-          },
-        }),
-        h(UButton, {
-          icon: "i-lucide-trash",
-          color: "error",
-          variant: "ghost",
-          onClick: () => openDeleteModal(item),
-        }),
-      ]);
+      return h(UButton, {
+        icon: "i-lucide-edit",
+        color: "neutral",
+        variant: "ghost",
+        onClick: () => {
+          currentActivity.value = item;
+          openModal.value = true;
+        },
+      });
     },
   },
 ];
@@ -145,20 +106,6 @@ async function updateActivity() {
     </template>
     <template #footer>
       <UButton @click="updateActivity">提交</UButton>
-    </template>
-  </UModal>
-
-  <UModal v-model:open="confirmDeleteOpen" title="确认删除">
-    <template #body>
-      <p>确认删除申报活动「{{ deletingActivity?.name || deletingActivity?.id }}」吗？</p>
-    </template>
-    <template #footer>
-      <div class="flex items-center gap-2">
-        <UButton color="neutral" variant="ghost" @click="confirmDeleteOpen = false">
-          取消
-        </UButton>
-        <UButton color="error" @click="confirmDeleteActivity">确认删除</UButton>
-      </div>
     </template>
   </UModal>
 </template>

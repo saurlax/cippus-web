@@ -42,28 +42,6 @@ const columns = [
     cell: ({ row }: any) => t(`awards.status.${row.original.status}`),
   },
   {
-    accessorKey: "evidences",
-    header: "附件",
-    cell: ({ row }: any) => {
-      const evidences = (row.original.evidences || []) as string[];
-
-      return h("div", { class: "flex items-center gap-2" }, [
-        h("span", `${evidences.length} 张`),
-        h(UButton, {
-          color: "neutral",
-          variant: "outline",
-          size: "xs",
-          label: "查看",
-          disabled: !evidences.length,
-          onClick: () => {
-            previewEvidences.value = evidences;
-            openEvidenceModal.value = true;
-          },
-        }),
-      ]);
-    },
-  },
-  {
     accessorKey: "updatedAt",
     header: "更新时间",
     cell: ({ row }: any) => formatDateText(row.original.updatedAt),
@@ -73,60 +51,28 @@ const columns = [
     cell: ({ row }: any) => {
       const item = row.original;
 
-      const approve = async () => {
-        await $fetch(`/api/admin/papers/${item.id}`, {
-          method: "put",
-          body: { status: "approved" },
-        });
-        await refresh();
-      };
-
-      const reject = async () => {
-        await $fetch(`/api/admin/papers/${item.id}`, {
-          method: "put",
-          body: { status: "rejected" },
-        });
-        await refresh();
-      };
-
-      return h("div", { class: "flex items-center gap-1" }, [
-        h(UButton, {
-          color: "success",
-          icon: "i-lucide-check",
-          variant: "ghost",
-          onClick: approve,
-        }),
-        h(UButton, {
-          color: "error",
-          icon: "i-lucide-x",
-          variant: "ghost",
-          onClick: reject,
-        }),
-        h(UButton, {
-          color: "neutral",
-          icon: "i-lucide-pencil",
-          variant: "ghost",
-          onClick: () => {
-            currentPaper.value = {
-              id: item.id,
-              name: item.name,
-              type: item.type,
-              date: formatDateText(item.date),
-              status: item.status,
-              evidences: item.evidences || [],
-            };
-            openModal.value = true;
-          },
-        }),
-      ]);
+      return h(UButton, {
+        color: "neutral",
+        icon: "i-lucide-edit",
+        variant: "ghost",
+        onClick: () => {
+          currentPaper.value = {
+            id: item.id,
+            name: item.name,
+            type: item.type,
+            date: formatDateText(item.date),
+            status: item.status,
+            evidences: item.evidences || [],
+          };
+          openModal.value = true;
+        },
+      });
     },
   },
 ];
 
 const openModal = ref(false);
-const openEvidenceModal = ref(false);
 const currentPaper = ref<any>({});
-const previewEvidences = ref<string[]>([]);
 
 async function editPaper() {
   if (!currentPaper.value?.id) {
@@ -175,16 +121,13 @@ async function editPaper() {
             :items="statusItems as any"
           />
         </UFormField>
+        <UFormField label="附件" name="evidences">
+          <EvidencePreview :evidences="currentPaper.evidences || []" />
+        </UFormField>
       </UForm>
     </template>
     <template #footer>
       <UButton @click="editPaper">保存</UButton>
-    </template>
-  </UModal>
-
-  <UModal v-model:open="openEvidenceModal" title="附件预览">
-    <template #body>
-      <EvidencePreview :evidences="previewEvidences" />
     </template>
   </UModal>
 </template>

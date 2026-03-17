@@ -20,7 +20,7 @@ const columns = [
     id: "actions",
     cell: ({ row }: any) => {
       return h(UButton, {
-        icon: "i-lucide-pencil",
+        icon: "i-lucide-edit",
         color: "neutral",
         variant: "ghost",
         onClick: () => {
