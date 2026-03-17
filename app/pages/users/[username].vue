@@ -226,7 +226,7 @@ function startEdit() {
 
   form.name = user.value.name || "";
   form.bio = user.value.bio || "";
-  form.email = user.value.email || "";
+  form.email = "";
   form.gender = user.value.gender || "male";
   form.college = user.value.college || "";
   form.password = "";
@@ -582,7 +582,12 @@ async function saveRecordDraft() {
     <UPage>
       <UPageBody>
         <UPageCard title="个人简介">
-          <MDC :value="user.bio || '尚无简介'" />
+          <UEmpty
+            v-if="!isSelf && !user.bio"
+            variant="naked"
+            title="暂无简介"
+          />
+          <MDC v-else :value="user.bio || '尚无简介'" />
         </UPageCard>
 
         <UPageCard title="奖项">
@@ -632,6 +637,11 @@ async function saveRecordDraft() {
               </template>
             </UPageCard>
           </UPageGrid>
+          <UEmpty
+            v-if="!isSelf && !awardsList.length"
+            variant="naked"
+            title="暂无奖项"
+          />
         </UPageCard>
 
         <UPageCard title="论文">
@@ -676,6 +686,11 @@ async function saveRecordDraft() {
               </template>
             </UPageCard>
           </UPageGrid>
+          <UEmpty
+            v-if="!isSelf && !papersList.length"
+            variant="naked"
+            title="暂无论文"
+          />
         </UPageCard>
 
         <UPageCard title="专利">
@@ -720,6 +735,11 @@ async function saveRecordDraft() {
               </template>
             </UPageCard>
           </UPageGrid>
+          <UEmpty
+            v-if="!isSelf && !patentsList.length"
+            variant="naked"
+            title="暂无专利"
+          />
         </UPageCard>
 
         <UPageCard title="大创">
@@ -766,6 +786,11 @@ async function saveRecordDraft() {
               </template>
             </UPageCard>
           </UPageGrid>
+          <UEmpty
+            v-if="!isSelf && !innovationsList.length"
+            variant="naked"
+            title="暂无大创"
+          />
         </UPageCard>
       </UPageBody>
     </UPage>
