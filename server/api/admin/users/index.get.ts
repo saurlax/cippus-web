@@ -1,9 +1,15 @@
-import { asc } from "drizzle-orm";
-import { db, schema } from "@nuxthub/db";
+import { db } from "@nuxthub/db";
 
 export default defineEventHandler(async () => {
-  return await db
-    .select()
-    .from(schema.users)
-    .orderBy(asc(schema.users.id));
+  return await db.query.users.findMany({
+    columns: {
+      id: true,
+      username: true,
+      name: true,
+      email: true,
+      gender: true,
+      college: true,
+      admin: true,
+    },
+  });
 });

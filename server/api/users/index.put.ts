@@ -27,16 +27,8 @@ function toNullableGender(value: unknown): "male" | "female" | null {
 }
 
 export default defineEventHandler(async (event) => {
-  const username = getRouterParam(event, "username");
-
-  if (!username) {
-    throw createError({ statusCode: 400, statusMessage: "Missing username" });
-  }
-
-  const session = await requireUserSession(event);
-  if (session.user?.username !== username) {
-    throw createError({ statusCode: 403, statusMessage: "Forbidden" });
-  }
+  const { user } = await requireUserSession(event);
+  const username = user.username;
 
   const body = await readBody<UpdateProfileBody>(event);
   const nextPassword = typeof body.password === "string" ? body.password.trim() : "";
@@ -60,7 +52,6 @@ export default defineEventHandler(async (event) => {
       username: true,
       name: true,
       bio: true,
-      email: true,
       gender: true,
       college: true,
       admin: true,
@@ -79,5 +70,12 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  return updatedUser;
+  return {
+    id: updatedUser.id,
+    username: updatedUser.username,
+    name: updatedUser.name,
+    bio: updatedUser.bio,
+    gender: updatedUser.gender,
+    college: updatedUser.college,
+  };
 });

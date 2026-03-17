@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   const username = getRouterParam(event, "username")!;
   const id = Number(getRouterParam(event, "id"));
   const session = await requireUserSession(event);
-  if (session.user?.username !== username && !session.user?.admin)
+  if (session.user?.username !== username)
     throw createError({ statusCode: 403 });
 
   const user = await db.query.users.findFirst({

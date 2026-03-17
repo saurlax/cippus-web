@@ -4,12 +4,13 @@ import { db, schema } from "@nuxthub/db";
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, "id"));
   const body = await readBody(event);
+  const nextPassword = typeof body.password === "string" ? body.password.trim() : "";
 
-  const [user] = await db
+  const [updated] = await db
     .update(schema.users)
     .set({
       username: body.username,
-      password: await hashPassword(body.password),
+      ...(nextPassword ? { password: await hashPassword(nextPassword) } : {}),
       name: body.name,
       email: body.email,
       gender: body.gender,
@@ -17,7 +18,18 @@ export default defineEventHandler(async (event) => {
       admin: body.admin,
     })
     .where(eq(schema.users.id, id))
-    .returning();
+    .returning({ id: schema.users.id });
 
-  return user;
+  return await db.query.users.findFirst({
+    where: eq(schema.users.id, updated.id),
+    columns: {
+      id: true,
+      username: true,
+      name: true,
+      email: true,
+      gender: true,
+      college: true,
+      admin: true,
+    },
+  });
 });

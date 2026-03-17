@@ -289,7 +289,7 @@ async function saveProfile() {
 
   try {
     saving.value = true;
-    await $fetch(`/api/users/${user.value.username}`, {
+    await $fetch(`/api/users`, {
       method: "PUT",
       body: {
         name: form.name,

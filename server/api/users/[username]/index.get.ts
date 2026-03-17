@@ -15,10 +15,8 @@ export default defineEventHandler(async (event) => {
       username: true,
       name: true,
       bio: true,
-      email: true,
       gender: true,
       college: true,
-      admin: true,
     },
   });
 });
