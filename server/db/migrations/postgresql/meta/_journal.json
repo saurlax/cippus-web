@@ -15,6 +15,13 @@
       "when": 1773385539187,
       "tag": "0001_aberrant_master_chief",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773836286271,
+      "tag": "0002_volatile_magneto",
+      "breakpoints": true
     }
   ]
 }

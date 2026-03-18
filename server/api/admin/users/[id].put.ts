@@ -20,6 +20,9 @@ export default defineEventHandler(async (event) => {
     .where(eq(schema.users.id, id))
     .returning({ id: schema.users.id });
 
+  if (!updated)
+    throw createError({ statusCode: 404, statusMessage: "用户不存在" });
+
   return await db.query.users.findFirst({
     where: eq(schema.users.id, updated.id),
     columns: {

@@ -1,12 +1,16 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  index,
   integer,
+  jsonb,
+  numeric,
   pgEnum,
   pgTable,
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const reviewStatusEnum = pgEnum("review_status", [
@@ -54,6 +58,13 @@ export const patentTypeEnum = pgEnum("patent_type", [
 export const innovationTypeEnum = pgEnum("innovation_type", [
   "excellent",
   "qualified",
+]);
+
+export const achievementTypeEnum = pgEnum("achievement_type", [
+  "award",
+  "paper",
+  "patent",
+  "innovation",
 ]);
 
 export const users = pgTable("users", {
@@ -179,22 +190,27 @@ export const activities = pgTable("activities", {
   description: text("description"),
   startDate: timestamp("start_date", { mode: "date" }).notNull(),
   endDate: timestamp("end_date", { mode: "date" }).notNull(),
+  scoringConfig: jsonb("scoring_config")
+    .$type<Record<string, string | number | boolean>>()
+    .notNull()
+    .default({}),
 });
 
 export const applications = pgTable("applications", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
   activityId: integer("activity_id")
     .notNull()
     .references(() => activities.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     }),
-  awardId: integer("award_id")
-    .notNull()
-    .references(() => awards.id, {
-      onDelete: "cascade",
-      onUpdate: "cascade",
-    }),
+  totalScore: integer("total_score").notNull().default(0),
   status: reviewStatusEnum("status").notNull().default("draft"),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "date" })
@@ -203,12 +219,51 @@ export const applications = pgTable("applications", {
     .$onUpdate(() => new Date()),
 });
 
+export const applicationItems = pgTable(
+  "application_items",
+  {
+    id: serial("id").primaryKey(),
+    applicationId: integer("application_id")
+      .notNull()
+      .references(() => applications.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    achievementType: achievementTypeEnum("achievement_type").notNull(),
+    achievementId: integer("achievement_id").notNull(),
+    baseScore: integer("base_score").notNull().default(0),
+    multiplier: numeric("multiplier", { precision: 8, scale: 2 })
+      .notNull()
+      .default("1"),
+    extraScore: integer("extra_score").notNull().default(0),
+    finalScore: integer("final_score").notNull().default(0),
+    createdAt: timestamp("created_at", { mode: "date" })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { mode: "date" })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    applicationIdIdx: index("application_items_application_id_idx").on(
+      table.applicationId,
+    ),
+    achievementLookupIdx: index("application_items_achievement_lookup_idx").on(
+      table.achievementType,
+      table.achievementId,
+    ),
+    applicationAchievementUnique: uniqueIndex(
+      "application_items_application_achievement_unique",
+    ).on(table.applicationId, table.achievementType, table.achievementId),
+  }),
+);
+
 export const activitiesRelations = relations(activities, ({ many }) => ({
   applications: many(applications),
 }));
 
-export const awardsRelations = relations(awards, ({ many, one }) => ({
-  applications: many(applications),
+export const awardsRelations = relations(awards, ({ one }) => ({
   contest: one(contests, {
     fields: [awards.contestId],
     references: [contests.id],
@@ -243,13 +298,24 @@ export const innovationsRelations = relations(
   }),
 );
 
-export const applicationsRelations = relations(applications, ({ one }) => ({
+export const applicationsRelations = relations(applications, ({ one, many }) => ({
+  user: one(users, {
+    fields: [applications.userId],
+    references: [users.id],
+  }),
   activity: one(activities, {
     fields: [applications.activityId],
     references: [activities.id],
   }),
-  award: one(awards, {
-    fields: [applications.awardId],
-    references: [awards.id],
-  }),
+  items: many(applicationItems),
 }));
+
+export const applicationItemsRelations = relations(
+  applicationItems,
+  ({ one }) => ({
+    application: one(applications, {
+      fields: [applicationItems.applicationId],
+      references: [applications.id],
+    }),
+  }),
+);

@@ -17,6 +17,9 @@ export default defineEventHandler(async (event) => {
     })
     .returning({ id: schema.users.id });
 
+  if (!inserted)
+    throw createError({ statusCode: 500, statusMessage: "创建用户失败" });
+
   return await db.query.users.findFirst({
     where: eq(schema.users.id, inserted.id),
     columns: {

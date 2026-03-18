@@ -1,7 +1,118 @@
 <script setup lang="ts">
 const UButton = resolveComponent("UButton");
+const toast = useToast();
+const { t } = useI18n();
+
+type ScoringValue = string | number | boolean;
+type ScoringConfig = Record<string, ScoringValue>;
+
+type AwardBaseRow = {
+  level: string;
+  type: string;
+  score: number;
+};
+
+type PaperBaseRow = {
+  type: string;
+  score: number;
+};
+
+type PatentBaseRow = {
+  type: string;
+  score: number;
+};
+
+type InnovationBaseRow = {
+  type: string;
+  score: number;
+};
+
+type ContestExtraRow = {
+  contestId: string;
+  level: string;
+  extraScore: number;
+};
+
+type ContestMultiplierRow = {
+  contestId: string;
+  level: string;
+  multiplier: number;
+};
 
 const { data: activities } = await useFetch("/api/admin/activities");
+
+const levelItems = awardLevelValues.map((value) => ({
+  value,
+  label: t(`awards.level.${value}`),
+}));
+const awardTypeItems = awardTypeValues.map((value) => ({
+  value,
+  label: t(`awards.type.${value}`),
+}));
+const paperTypeItems = paperTypeValues.map((value) => ({
+  value,
+  label: t(`papers.type.${value}`),
+}));
+const patentTypeItems = patentTypeValues.map((value) => ({
+  value,
+  label: t(`patents.type.${value}`),
+}));
+const innovationTypeItems = innovationTypeValues.map((value) => ({
+  value,
+  label: t(`innovations.type.${value}`),
+}));
+
+function toDateInputValue(value: string | Date | null | undefined): string {
+  if (!value) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return value.includes("T") ? value.slice(0, 10) : value;
+}
+
+function normalizeScoringConfig(input: unknown): ScoringConfig {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+
+  const config: ScoringConfig = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      config[key] = value;
+    }
+  }
+  return config;
+}
+
+function parseJsonScoringConfig(text: string): ScoringConfig {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("JSON 格式错误");
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("scoringConfig 必须是对象");
+  }
+
+  const config = normalizeScoringConfig(parsed);
+  if (Object.keys(config).length !== Object.keys(parsed as object).length) {
+    throw new Error("scoringConfig 的 value 仅支持 string/number/boolean");
+  }
+
+  return config;
+}
+
+function createEmptyActivity() {
+  return {
+    name: "",
+    description: "",
+    startDate: toDateInputValue(new Date()),
+    endDate: toDateInputValue(new Date()),
+    scoringConfig: {} as ScoringConfig,
+  };
+}
 
 const columns = [
   { accessorKey: "id", header: "#" },
@@ -19,34 +130,269 @@ const columns = [
         color: "neutral",
         variant: "ghost",
         onClick: () => {
-          currentActivity.value = item;
+          openEditor(item);
           openModal.value = true;
         },
       });
     },
   },
 ];
+
 const openModal = ref(false);
-const currentActivity = ref<any>({
-  name: "",
-  description: "",
-  startDate: new Date(),
-  endDate: new Date(),
-});
+const currentActivity = ref<any>(createEmptyActivity());
+const editorMode = ref<"visual" | "json">("visual");
+const scoringConfigText = ref("{}");
+
+const awardBaseRows = ref<AwardBaseRow[]>([]);
+const paperBaseRows = ref<PaperBaseRow[]>([]);
+const patentBaseRows = ref<PatentBaseRow[]>([]);
+const innovationBaseRows = ref<InnovationBaseRow[]>([]);
+const contestExtraRows = ref<ContestExtraRow[]>([]);
+const contestMultiplierRows = ref<ContestMultiplierRow[]>([]);
+const otherEntries = ref<ScoringConfig>({});
+
+function readNumber(value: ScoringValue, fallback = 0): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
+function openEditor(item?: any) {
+  currentActivity.value = item
+    ? {
+        ...item,
+        startDate: toDateInputValue(item.startDate),
+        endDate: toDateInputValue(item.endDate),
+        scoringConfig: normalizeScoringConfig(item.scoringConfig),
+      }
+    : createEmptyActivity();
+
+  editorMode.value = "visual";
+  buildVisualRowsFromConfig(currentActivity.value.scoringConfig);
+}
+
+function buildVisualRowsFromConfig(config: ScoringConfig = {}) {
+  awardBaseRows.value = [];
+  paperBaseRows.value = [];
+  patentBaseRows.value = [];
+  innovationBaseRows.value = [];
+  contestExtraRows.value = [];
+  contestMultiplierRows.value = [];
+  otherEntries.value = {};
+
+  for (const [key, value] of Object.entries(config)) {
+    if (/^award\.[^.]+\.[^.]+$/.test(key)) {
+      const parts = key.split(".");
+      const level = parts[1] || "";
+      const type = parts[2] || "";
+      awardBaseRows.value.push({
+        level,
+        type,
+        score: readNumber(value),
+      });
+      continue;
+    }
+
+    if (key.startsWith("paper.")) {
+      paperBaseRows.value.push({
+        type: key.replace("paper.", ""),
+        score: readNumber(value),
+      });
+      continue;
+    }
+
+    if (key.startsWith("patent.")) {
+      patentBaseRows.value.push({
+        type: key.replace("patent.", ""),
+        score: readNumber(value),
+      });
+      continue;
+    }
+
+    if (key.startsWith("innovation.")) {
+      innovationBaseRows.value.push({
+        type: key.replace("innovation.", ""),
+        score: readNumber(value),
+      });
+      continue;
+    }
+
+    if (/^contest\.extra\.[^.]+\.[^.]+$/.test(key)) {
+      const parts = key.split(".");
+      const contestId = parts[2] || "";
+      const level = parts[3] || "";
+      contestExtraRows.value.push({
+        contestId,
+        level,
+        extraScore: readNumber(value),
+      });
+      continue;
+    }
+
+    if (/^contest\.multiplier\.[^.]+\.[^.]+$/.test(key)) {
+      const parts = key.split(".");
+      const contestId = parts[2] || "";
+      const level = parts[3] || "";
+      contestMultiplierRows.value.push({
+        contestId,
+        level,
+        multiplier: readNumber(value, 1),
+      });
+      continue;
+    }
+
+    otherEntries.value[key] = value;
+  }
+
+  if (!awardBaseRows.value.length) {
+    awardBaseRows.value.push({
+      level: "national",
+      type: "first_prize",
+      score: 0,
+    });
+  }
+  if (!paperBaseRows.value.length) {
+    paperBaseRows.value.push({ type: "influential", score: 0 });
+  }
+  if (!patentBaseRows.value.length) {
+    patentBaseRows.value.push({ type: "domestic_invention", score: 0 });
+  }
+  if (!innovationBaseRows.value.length) {
+    innovationBaseRows.value.push({ type: "excellent", score: 0 });
+  }
+
+  syncJsonText();
+}
+
+function buildConfigFromVisual(): ScoringConfig {
+  const next: ScoringConfig = { ...otherEntries.value };
+
+  for (const row of awardBaseRows.value) {
+    if (row.level.trim() && row.type.trim()) {
+      next[`award.${row.level.trim()}.${row.type.trim()}`] = Number(
+        row.score || 0,
+      );
+    }
+  }
+
+  for (const row of paperBaseRows.value) {
+    if (row.type.trim()) {
+      next[`paper.${row.type.trim()}`] = Number(row.score || 0);
+    }
+  }
+
+  for (const row of patentBaseRows.value) {
+    if (row.type.trim()) {
+      next[`patent.${row.type.trim()}`] = Number(row.score || 0);
+    }
+  }
+
+  for (const row of innovationBaseRows.value) {
+    if (row.type.trim()) {
+      next[`innovation.${row.type.trim()}`] = Number(row.score || 0);
+    }
+  }
+
+  for (const row of contestExtraRows.value) {
+    if (row.contestId.trim() && row.level.trim()) {
+      next[`contest.extra.${row.contestId.trim()}.${row.level.trim()}`] =
+        Number(row.extraScore || 0);
+    }
+  }
+
+  for (const row of contestMultiplierRows.value) {
+    if (row.contestId.trim() && row.level.trim()) {
+      next[`contest.multiplier.${row.contestId.trim()}.${row.level.trim()}`] =
+        Number(row.multiplier || 1);
+    }
+  }
+
+  for (const key of Object.keys(next)) {
+    if (
+      key.startsWith("rule.whitelist.contest.") ||
+      key === "rule.version" ||
+      key === "rule.timeMode" ||
+      key.startsWith("score.multiplier.level.") ||
+      key.startsWith("score.extra.contest.") ||
+      /^score\.base\.award\.[^.]+$/.test(key)
+    ) {
+      delete next[key];
+    }
+  }
+
+  currentActivity.value.scoringConfig = next;
+  return next;
+}
+
+function syncJsonText() {
+  scoringConfigText.value = JSON.stringify(
+    currentActivity.value.scoringConfig || {},
+    null,
+    2,
+  );
+}
+
+function switchEditorMode(mode: "visual" | "json") {
+  if (mode === editorMode.value) return;
+
+  if (mode === "json") {
+    buildConfigFromVisual();
+    syncJsonText();
+    editorMode.value = mode;
+    return;
+  }
+
+  try {
+    const parsed = parseJsonScoringConfig(scoringConfigText.value);
+    currentActivity.value.scoringConfig = parsed;
+    buildVisualRowsFromConfig(parsed);
+    editorMode.value = mode;
+  } catch (e: any) {
+    toast.add({
+      title: "JSON 解析失败",
+      description: e?.data?.message || e?.message,
+      color: "error",
+    });
+  }
+}
+
+function applyJsonEditor() {
+  try {
+    const parsed = parseJsonScoringConfig(scoringConfigText.value);
+    currentActivity.value.scoringConfig = parsed;
+    buildVisualRowsFromConfig(parsed);
+    toast.add({
+      title: "JSON 已应用到可视化编辑器",
+      color: "success",
+    });
+  } catch (e: any) {
+    toast.add({
+      title: "JSON 解析失败",
+      description: e?.data?.message || e?.message,
+      color: "error",
+    });
+  }
+}
 
 function createActivity() {
   openModal.value = true;
-  currentActivity.value = {
-    name: "",
-    description: "",
-    startDate: new Date(),
-    endDate: new Date(),
-  };
+  openEditor();
 }
 
 async function updateActivity() {
   const activity = currentActivity.value;
-  if (activity) {
+  if (!activity) return;
+
+  try {
+    if (editorMode.value === "json") {
+      activity.scoringConfig = parseJsonScoringConfig(scoringConfigText.value);
+    } else {
+      activity.scoringConfig = buildConfigFromVisual();
+    }
+
     if (activity.id) {
       await $fetch<any>(`/api/admin/activities/${activity.id}`, {
         method: "PUT",
@@ -58,10 +404,36 @@ async function updateActivity() {
         body: activity,
       });
     }
+
+    activities.value = await $fetch<any>("/api/admin/activities");
+    openModal.value = false;
+    toast.add({ title: "活动已保存", color: "success" });
+  } catch (e: any) {
+    toast.add({
+      title: "保存失败",
+      description: e?.data?.message || e?.message,
+      color: "error",
+    });
   }
-  activities.value = await $fetch<any>("/api/admin/activities");
-  openModal.value = false;
 }
+
+watch(
+  [
+    awardBaseRows,
+    paperBaseRows,
+    patentBaseRows,
+    innovationBaseRows,
+    contestExtraRows,
+    contestMultiplierRows,
+  ],
+  () => {
+    if (editorMode.value === "visual") {
+      buildConfigFromVisual();
+      syncJsonText();
+    }
+  },
+  { deep: true },
+);
 </script>
 
 <template>
@@ -102,6 +474,316 @@ async function updateActivity() {
             v-model="currentActivity.endDate"
           />
         </UFormField>
+
+        <div class="rounded-md border border-default p-3 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-sm font-medium">积分规则</h3>
+            <div class="flex gap-2">
+              <UButton
+                size="xs"
+                :variant="editorMode === 'visual' ? 'solid' : 'soft'"
+                @click="switchEditorMode('visual')"
+              >
+                可视化编辑
+              </UButton>
+              <UButton
+                size="xs"
+                :variant="editorMode === 'json' ? 'solid' : 'soft'"
+                @click="switchEditorMode('json')"
+              >
+                JSON 编辑
+              </UButton>
+            </div>
+          </div>
+
+          <template v-if="editorMode === 'visual'">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">奖项基础分</p>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-lucide-plus"
+                  @click="
+                    awardBaseRows.push({
+                      level: 'national',
+                      type: 'first_prize',
+                      score: 0,
+                    })
+                  "
+                >
+                  添加
+                </UButton>
+              </div>
+              <div
+                v-for="(row, idx) in awardBaseRows"
+                :key="`award-${idx}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <USelect
+                  class="col-span-3"
+                  v-model="row.level"
+                  :items="levelItems as any"
+                />
+                <USelect
+                  class="col-span-4"
+                  v-model="row.type"
+                  :items="awardTypeItems as any"
+                />
+                <UInput
+                  class="col-span-4"
+                  type="number"
+                  v-model.number="row.score"
+                />
+                <UButton
+                  class="col-span-1"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  @click="awardBaseRows.splice(idx, 1)"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">论文基础分</p>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-lucide-plus"
+                  @click="paperBaseRows.push({ type: 'influential', score: 0 })"
+                >
+                  添加
+                </UButton>
+              </div>
+              <div
+                v-for="(row, idx) in paperBaseRows"
+                :key="`paper-${idx}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <USelect
+                  class="col-span-7"
+                  v-model="row.type"
+                  :items="paperTypeItems as any"
+                />
+                <UInput
+                  class="col-span-4"
+                  type="number"
+                  v-model.number="row.score"
+                />
+                <UButton
+                  class="col-span-1"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  @click="paperBaseRows.splice(idx, 1)"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">专利基础分</p>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-lucide-plus"
+                  @click="
+                    patentBaseRows.push({
+                      type: 'domestic_invention',
+                      score: 0,
+                    })
+                  "
+                >
+                  添加
+                </UButton>
+              </div>
+              <div
+                v-for="(row, idx) in patentBaseRows"
+                :key="`patent-${idx}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <USelect
+                  class="col-span-7"
+                  v-model="row.type"
+                  :items="patentTypeItems as any"
+                />
+                <UInput
+                  class="col-span-4"
+                  type="number"
+                  v-model.number="row.score"
+                />
+                <UButton
+                  class="col-span-1"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  @click="patentBaseRows.splice(idx, 1)"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">大创基础分</p>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-lucide-plus"
+                  @click="
+                    innovationBaseRows.push({ type: 'excellent', score: 0 })
+                  "
+                >
+                  添加
+                </UButton>
+              </div>
+              <div
+                v-for="(row, idx) in innovationBaseRows"
+                :key="`innovation-${idx}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <USelect
+                  class="col-span-7"
+                  v-model="row.type"
+                  :items="innovationTypeItems as any"
+                />
+                <UInput
+                  class="col-span-4"
+                  type="number"
+                  v-model.number="row.score"
+                />
+                <UButton
+                  class="col-span-1"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  @click="innovationBaseRows.splice(idx, 1)"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">竞赛额外加分</p>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-lucide-plus"
+                  @click="
+                    contestExtraRows.push({
+                      contestId: '',
+                      level: 'national',
+                      extraScore: 0,
+                    })
+                  "
+                >
+                  添加
+                </UButton>
+              </div>
+              <div
+                v-for="(row, idx) in contestExtraRows"
+                :key="`contest-extra-${idx}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <UInput
+                  class="col-span-4"
+                  v-model="row.contestId"
+                  placeholder="contestId"
+                />
+                <USelect
+                  class="col-span-4"
+                  v-model="row.level"
+                  :items="levelItems as any"
+                />
+                <UInput
+                  class="col-span-3"
+                  type="number"
+                  v-model.number="row.extraScore"
+                />
+                <UButton
+                  class="col-span-1"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  @click="contestExtraRows.splice(idx, 1)"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">竞赛倍数</p>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-lucide-plus"
+                  @click="
+                    contestMultiplierRows.push({
+                      contestId: '',
+                      level: 'national',
+                      multiplier: 1,
+                    })
+                  "
+                >
+                  添加
+                </UButton>
+              </div>
+              <div
+                v-for="(row, idx) in contestMultiplierRows"
+                :key="`contest-multiplier-${idx}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <UInput
+                  class="col-span-4"
+                  v-model="row.contestId"
+                  placeholder="contestId"
+                />
+                <USelect
+                  class="col-span-4"
+                  v-model="row.level"
+                  :items="levelItems as any"
+                />
+                <UInput
+                  class="col-span-3"
+                  type="number"
+                  step="0.01"
+                  v-model.number="row.multiplier"
+                />
+                <UButton
+                  class="col-span-1"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  @click="contestMultiplierRows.splice(idx, 1)"
+                />
+              </div>
+              <p class="text-xs text-muted">未在列表内的竞赛默认不计分</p>
+            </div>
+          </template>
+
+          <template v-else>
+            <UFormField label="scoringConfig JSON">
+              <UTextarea
+                class="w-full"
+                :rows="16"
+                v-model="scoringConfigText"
+                placeholder="请输入 JSON 对象"
+              />
+            </UFormField>
+            <div class="flex justify-end">
+              <UButton size="sm" variant="soft" @click="applyJsonEditor">
+                应用到可视化编辑器
+              </UButton>
+            </div>
+          </template>
+        </div>
       </UForm>
     </template>
     <template #footer>
