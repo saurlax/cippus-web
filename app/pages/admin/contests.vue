@@ -61,27 +61,27 @@ async function updateContest() {
 </script>
 
 <template>
-  <UDashboardNavbar title="赛事管理">
+  <UDashboardNavbar title="竞赛管理">
     <template #right>
-      <UButton @click="createContest">新建赛事</UButton>
+      <UButton @click="createContest">新建竞赛</UButton>
     </template>
   </UDashboardNavbar>
   <UTable :data="contests" :columns />
-  <UModal v-model:open="openModal" title="编辑赛事">
+  <UModal v-model:open="openModal" title="编辑竞赛">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit="updateContest">
         <UFormField label="标题" name="title" required>
           <UInput
             class="w-full"
             v-model="currentContest.title"
-            placeholder="请输入赛事标题"
+            placeholder="请输入竞赛标题"
           />
         </UFormField>
         <UFormField label="描述" name="description">
           <UTextarea
             class="w-full"
             v-model="currentContest.description"
-            placeholder="请输入赛事描述"
+            placeholder="请输入竞赛描述"
           />
         </UFormField>
       </UForm>

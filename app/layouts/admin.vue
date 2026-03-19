@@ -1,39 +1,26 @@
 <script setup lang="ts">
+import type { NavigationMenuItem } from "@nuxt/ui";
 const { user } = useUserSession();
 
 if (!user.value || !user.value.admin) {
   navigateTo("/");
 }
 
-const items = [
+const items: NavigationMenuItem[] = [
   {
     label: "返回主站",
     icon: "i-lucide-arrow-left-circle",
     to: "/",
   },
   {
-    label: "公告管理",
-    icon: "i-lucide-bell",
-    to: "/admin/notices",
-    value: "notices",
+    label: "数据管理",
+    type: "label",
   },
   {
-    label: "赛事管理",
+    label: "竞赛管理",
     icon: "i-lucide-trophy",
     to: "/admin/contests",
     value: "contests",
-  },
-  {
-    label: "申报管理",
-    icon: "i-lucide-activity",
-    to: "/admin/activities",
-    value: "activities",
-  },
-  {
-    label: "用户管理",
-    icon: "i-lucide-users",
-    to: "/admin/users",
-    value: "users",
   },
   {
     label: "奖项管理",
@@ -58,6 +45,28 @@ const items = [
     icon: "i-lucide-lightbulb",
     to: "/admin/innovations",
     value: "innovations",
+  },
+  {
+    label: "申报管理",
+    icon: "i-lucide-activity",
+    to: "/admin/activities",
+    value: "activities",
+  },
+  {
+    label: "平台管理",
+    type: "label",
+  },
+  {
+    label: "公告管理",
+    icon: "i-lucide-bell",
+    to: "/admin/notices",
+    value: "notices",
+  },
+  {
+    label: "用户管理",
+    icon: "i-lucide-users",
+    to: "/admin/users",
+    value: "users",
   },
 ];
 </script>

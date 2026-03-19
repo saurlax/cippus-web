@@ -9,7 +9,7 @@ const navItems = computed(() => {
       to: "/notices",
     },
     {
-      label: "赛事",
+      label: "竞赛",
       to: "/contests",
     },
     {

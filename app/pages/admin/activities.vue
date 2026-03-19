@@ -40,6 +40,7 @@ type ContestMultiplierRow = {
 };
 
 const { data: activities } = await useFetch("/api/admin/activities");
+const { data: contests } = await useFetch("/api/contests");
 
 const levelItems = awardLevelValues.map((value) => ({
   value,
@@ -61,6 +62,12 @@ const innovationTypeItems = innovationTypeValues.map((value) => ({
   value,
   label: t(`innovations.type.${value}`),
 }));
+const contestItems = computed(() => 
+  (contests.value || []).map((c: any) => ({
+    value: String(c.id),
+    label: c.title,
+  }))
+);
 
 function toDateInputValue(value: string | Date | null | undefined): string {
   if (!value) return "";
@@ -151,7 +158,7 @@ const contestExtraRows = ref<ContestExtraRow[]>([]);
 const contestMultiplierRows = ref<ContestMultiplierRow[]>([]);
 const otherEntries = ref<ScoringConfig>({});
 
-function readNumber(value: ScoringValue, fallback = 0): number {
+function readNumber(value: ScoringValue | undefined, fallback = 0): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
     const parsed = Number(value);
@@ -183,43 +190,44 @@ function buildVisualRowsFromConfig(config: ScoringConfig = {}) {
   contestMultiplierRows.value = [];
   otherEntries.value = {};
 
-  for (const [key, value] of Object.entries(config)) {
-    if (/^award\.[^.]+\.[^.]+$/.test(key)) {
-      const parts = key.split(".");
-      const level = parts[1] || "";
-      const type = parts[2] || "";
+  // 构建所有基础分行
+  for (const level of awardLevelValues) {
+    for (const type of awardTypeValues) {
+      const key = `award.${level}.${type}`;
       awardBaseRows.value.push({
         level,
         type,
-        score: readNumber(value),
+        score: readNumber(config[key]),
       });
-      continue;
     }
+  }
 
-    if (key.startsWith("paper.")) {
-      paperBaseRows.value.push({
-        type: key.replace("paper.", ""),
-        score: readNumber(value),
-      });
-      continue;
-    }
+  for (const type of paperTypeValues) {
+    const key = `paper.${type}`;
+    paperBaseRows.value.push({
+      type,
+      score: readNumber(config[key]),
+    });
+  }
 
-    if (key.startsWith("patent.")) {
-      patentBaseRows.value.push({
-        type: key.replace("patent.", ""),
-        score: readNumber(value),
-      });
-      continue;
-    }
+  for (const type of patentTypeValues) {
+    const key = `patent.${type}`;
+    patentBaseRows.value.push({
+      type,
+      score: readNumber(config[key]),
+    });
+  }
 
-    if (key.startsWith("innovation.")) {
-      innovationBaseRows.value.push({
-        type: key.replace("innovation.", ""),
-        score: readNumber(value),
-      });
-      continue;
-    }
+  for (const type of innovationTypeValues) {
+    const key = `innovation.${type}`;
+    innovationBaseRows.value.push({
+      type,
+      score: readNumber(config[key]),
+    });
+  }
 
+  // 解析比赛相关配置
+  for (const [key, value] of Object.entries(config)) {
     if (/^contest\.extra\.[^.]+\.[^.]+$/.test(key)) {
       const parts = key.split(".");
       const contestId = parts[2] || "";
@@ -244,24 +252,16 @@ function buildVisualRowsFromConfig(config: ScoringConfig = {}) {
       continue;
     }
 
-    otherEntries.value[key] = value;
-  }
-
-  if (!awardBaseRows.value.length) {
-    awardBaseRows.value.push({
-      level: "national",
-      type: "first_prize",
-      score: 0,
-    });
-  }
-  if (!paperBaseRows.value.length) {
-    paperBaseRows.value.push({ type: "influential", score: 0 });
-  }
-  if (!patentBaseRows.value.length) {
-    patentBaseRows.value.push({ type: "domestic_invention", score: 0 });
-  }
-  if (!innovationBaseRows.value.length) {
-    innovationBaseRows.value.push({ type: "excellent", score: 0 });
+    // 收集非基础分的其他条目
+    if (
+      !key.startsWith("award.") &&
+      !key.startsWith("paper.") &&
+      !key.startsWith("patent.") &&
+      !key.startsWith("innovation.") &&
+      !key.startsWith("contest.")
+    ) {
+      otherEntries.value[key] = value;
+    }
   }
 
   syncJsonText();
@@ -498,171 +498,76 @@ watch(
 
           <template v-if="editorMode === 'visual'">
             <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium">奖项基础分</p>
-                <UButton
-                  size="xs"
-                  variant="soft"
-                  icon="i-lucide-plus"
-                  @click="
-                    awardBaseRows.push({
-                      level: 'national',
-                      type: 'first_prize',
-                      score: 0,
-                    })
-                  "
-                >
-                  添加
-                </UButton>
-              </div>
+              <p class="text-sm font-medium">奖项基础分</p>
               <div
                 v-for="(row, idx) in awardBaseRows"
                 :key="`award-${idx}`"
                 class="grid grid-cols-12 gap-2 items-center"
               >
-                <USelect
-                  class="col-span-3"
-                  v-model="row.level"
-                  :items="levelItems as any"
-                />
-                <USelect
-                  class="col-span-4"
-                  v-model="row.type"
-                  :items="awardTypeItems as any"
-                />
+                <div class="col-span-3 text-sm">
+                  {{ t(`awards.level.${row.level}`) }}
+                </div>
+                <div class="col-span-4 text-sm">
+                  {{ t(`awards.type.${row.type}`) }}
+                </div>
                 <UInput
-                  class="col-span-4"
+                  class="col-span-5"
                   type="number"
                   v-model.number="row.score"
-                />
-                <UButton
-                  class="col-span-1"
-                  size="xs"
-                  color="error"
-                  variant="ghost"
-                  icon="i-lucide-trash-2"
-                  @click="awardBaseRows.splice(idx, 1)"
                 />
               </div>
             </div>
 
             <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium">论文基础分</p>
-                <UButton
-                  size="xs"
-                  variant="soft"
-                  icon="i-lucide-plus"
-                  @click="paperBaseRows.push({ type: 'influential', score: 0 })"
-                >
-                  添加
-                </UButton>
-              </div>
+              <p class="text-sm font-medium">论文基础分</p>
               <div
                 v-for="(row, idx) in paperBaseRows"
                 :key="`paper-${idx}`"
                 class="grid grid-cols-12 gap-2 items-center"
               >
-                <USelect
-                  class="col-span-7"
-                  v-model="row.type"
-                  :items="paperTypeItems as any"
-                />
+                <div class="col-span-7 text-sm">
+                  {{ t(`papers.type.${row.type}`) }}
+                </div>
                 <UInput
-                  class="col-span-4"
+                  class="col-span-5"
                   type="number"
                   v-model.number="row.score"
-                />
-                <UButton
-                  class="col-span-1"
-                  size="xs"
-                  color="error"
-                  variant="ghost"
-                  icon="i-lucide-trash-2"
-                  @click="paperBaseRows.splice(idx, 1)"
                 />
               </div>
             </div>
 
             <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium">专利基础分</p>
-                <UButton
-                  size="xs"
-                  variant="soft"
-                  icon="i-lucide-plus"
-                  @click="
-                    patentBaseRows.push({
-                      type: 'domestic_invention',
-                      score: 0,
-                    })
-                  "
-                >
-                  添加
-                </UButton>
-              </div>
+              <p class="text-sm font-medium">专利基础分</p>
               <div
                 v-for="(row, idx) in patentBaseRows"
                 :key="`patent-${idx}`"
                 class="grid grid-cols-12 gap-2 items-center"
               >
-                <USelect
-                  class="col-span-7"
-                  v-model="row.type"
-                  :items="patentTypeItems as any"
-                />
+                <div class="col-span-7 text-sm">
+                  {{ t(`patents.type.${row.type}`) }}
+                </div>
                 <UInput
-                  class="col-span-4"
+                  class="col-span-5"
                   type="number"
                   v-model.number="row.score"
-                />
-                <UButton
-                  class="col-span-1"
-                  size="xs"
-                  color="error"
-                  variant="ghost"
-                  icon="i-lucide-trash-2"
-                  @click="patentBaseRows.splice(idx, 1)"
                 />
               </div>
             </div>
 
             <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium">大创基础分</p>
-                <UButton
-                  size="xs"
-                  variant="soft"
-                  icon="i-lucide-plus"
-                  @click="
-                    innovationBaseRows.push({ type: 'excellent', score: 0 })
-                  "
-                >
-                  添加
-                </UButton>
-              </div>
+              <p class="text-sm font-medium">大创基础分</p>
               <div
                 v-for="(row, idx) in innovationBaseRows"
                 :key="`innovation-${idx}`"
                 class="grid grid-cols-12 gap-2 items-center"
               >
-                <USelect
-                  class="col-span-7"
-                  v-model="row.type"
-                  :items="innovationTypeItems as any"
-                />
+                <div class="col-span-7 text-sm">
+                  {{ t(`innovations.type.${row.type}`) }}
+                </div>
                 <UInput
-                  class="col-span-4"
+                  class="col-span-5"
                   type="number"
                   v-model.number="row.score"
-                />
-                <UButton
-                  class="col-span-1"
-                  size="xs"
-                  color="error"
-                  variant="ghost"
-                  icon="i-lucide-trash-2"
-                  @click="innovationBaseRows.splice(idx, 1)"
                 />
               </div>
             </div>
@@ -690,10 +595,11 @@ watch(
                 :key="`contest-extra-${idx}`"
                 class="grid grid-cols-12 gap-2 items-center"
               >
-                <UInput
+                <USelect
                   class="col-span-4"
                   v-model="row.contestId"
-                  placeholder="contestId"
+                  :items="contestItems"
+                  placeholder="选择竞赛"
                 />
                 <USelect
                   class="col-span-4"
@@ -739,10 +645,11 @@ watch(
                 :key="`contest-multiplier-${idx}`"
                 class="grid grid-cols-12 gap-2 items-center"
               >
-                <UInput
+                <USelect
                   class="col-span-4"
                   v-model="row.contestId"
-                  placeholder="contestId"
+                  :items="contestItems"
+                  placeholder="选择竞赛"
                 />
                 <USelect
                   class="col-span-4"

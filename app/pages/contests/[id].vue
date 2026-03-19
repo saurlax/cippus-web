@@ -14,7 +14,7 @@ const links = [
 <template>
   <UContainer v-if="contest">
     <UPageHeader
-      headline="赛事"
+      headline="竞赛"
       :title="contest.title"
       :description="contest.description || ''"
       :links="links"
