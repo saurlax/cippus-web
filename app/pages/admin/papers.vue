@@ -26,53 +26,35 @@ const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "user.username", header: "用户" },
   { accessorKey: "name", header: "名称" },
-  {
-    accessorKey: "type",
-    header: "类型",
-    cell: ({ row }: any) => t(`papers.type.${row.original.type}`),
-  },
-  {
-    accessorKey: "date",
-    header: "时间",
-    cell: ({ row }: any) => formatDateText(row.original.date),
-  },
-  {
-    accessorKey: "status",
-    header: "状态",
-    cell: ({ row }: any) => t(`awards.status.${row.original.status}`),
-  },
-  {
-    accessorKey: "updatedAt",
-    header: "更新时间",
-    cell: ({ row }: any) => formatDateText(row.original.updatedAt),
-  },
-  {
-    id: "actions",
-    cell: ({ row }: any) => {
-      const item = row.original;
-
-      return h(UButton, {
-        color: "neutral",
-        icon: "i-lucide-edit",
-        variant: "ghost",
-        onClick: () => {
-          currentPaper.value = {
-            id: item.id,
-            name: item.name,
-            type: item.type,
-            date: formatDateText(item.date),
-            status: item.status,
-            evidences: item.evidences || [],
-          };
-          openModal.value = true;
-        },
-      });
-    },
-  },
+  { accessorKey: "type", header: "类型" },
+  { accessorKey: "date", header: "时间" },
+  { accessorKey: "status", header: "状态" },
+  { accessorKey: "updatedAt", header: "更新时间" },
+  { id: "actions", header: "操作" },
 ];
 
 const openModal = ref(false);
 const currentPaper = ref<any>({});
+
+function openModalEditor(item?: any) {
+  if (item) {
+    currentPaper.value = {
+      id: item.id,
+      name: item.name,
+      type: item.type,
+      date: formatDateText(item.date),
+      status: item.status,
+      evidences: item.evidences || [],
+    };
+  } else {
+    currentPaper.value = {};
+  }
+  openModal.value = true;
+}
+
+function closeModal() {
+  openModal.value = false;
+}
 
 async function editPaper() {
   if (!currentPaper.value?.id) {
@@ -89,14 +71,36 @@ async function editPaper() {
     },
   });
 
-  openModal.value = false;
+  closeModal();
   await refresh();
 }
 </script>
 
 <template>
   <UDashboardNavbar title="论文管理"></UDashboardNavbar>
-  <UTable :data="papers" :columns />
+  <UTable :data="papers" :columns>
+    <template #type-cell="{ row }">
+      {{ t(`papers.type.${row.original.type}`) }}
+    </template>
+    <template #date-cell="{ row }">
+      {{ new Date(row.original.date).toLocaleString('zh-CN') }}
+    </template>
+    <template #status-cell="{ row }">
+      {{ t(`awards.status.${row.original.status}`) }}
+    </template>
+    <template #updatedAt-cell="{ row }">
+      {{ new Date(row.original.updatedAt).toLocaleString('zh-CN') }}
+    </template>
+    <template #actions-cell="{ row }">
+      <UButton
+        color="neutral"
+        icon="i-lucide-edit"
+        variant="ghost"
+        size="sm"
+        @click="openModalEditor(row.original)"
+      />
+    </template>
+  </UTable>
 
   <UModal v-model:open="openModal" title="编辑论文">
     <template #body>

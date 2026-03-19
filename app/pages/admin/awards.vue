@@ -30,58 +30,36 @@ const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "user.username", header: "用户" },
   { accessorKey: "contest.title", header: "比赛" },
-  {
-    accessorKey: "level",
-    header: "级别",
-    cell: ({ row }: any) => t(`awards.level.${row.original.level}`),
-  },
-  {
-    accessorKey: "type",
-    header: "类型",
-    cell: ({ row }: any) => t(`awards.type.${row.original.type}`),
-  },
-  {
-    accessorKey: "date",
-    header: "获奖时间",
-    cell: ({ row }: any) => formatDateText(row.original.date),
-  },
-  {
-    accessorKey: "status",
-    header: "状态",
-    cell: ({ row }: any) => t(`awards.status.${row.original.status}`),
-  },
-  {
-    accessorKey: "updatedAt",
-    header: "更新时间",
-    cell: ({ row }: any) => formatDateText(row.original.updatedAt),
-  },
-  {
-    id: "actions",
-    cell: ({ row }: any) => {
-      const item = row.original;
-
-      return h(UButton, {
-        color: "neutral",
-        icon: "i-lucide-edit",
-        variant: "ghost",
-        onClick: () => {
-          currentAward.value = {
-            id: item.id,
-            status: item.status,
-            level: item.level,
-            type: item.type,
-            date: formatDateText(item.date),
-            evidences: item.evidences || [],
-          };
-          openModal.value = true;
-        },
-      });
-    },
-  },
+  { accessorKey: "level", header: "级别" },
+  { accessorKey: "type", header: "类型" },
+  { accessorKey: "date", header: "获奖时间" },
+  { accessorKey: "status", header: "状态" },
+  { accessorKey: "updatedAt", header: "更新时间" },
+  { id: "actions", header: "操作" },
 ];
 
 const openModal = ref(false);
 const currentAward = ref<any>({});
+
+function openModalEditor(item?: any) {
+  if (item) {
+    currentAward.value = {
+      id: item.id,
+      status: item.status,
+      level: item.level,
+      type: item.type,
+      date: formatDateText(item.date),
+      evidences: item.evidences || [],
+    };
+  } else {
+    currentAward.value = {};
+  }
+  openModal.value = true;
+}
+
+function closeModal() {
+  openModal.value = false;
+}
 
 async function editAward() {
   if (!currentAward.value?.id) {
@@ -98,14 +76,39 @@ async function editAward() {
     },
   });
 
-  openModal.value = false;
+  closeModal();
   await refresh();
 }
 </script>
 
 <template>
   <UDashboardNavbar title="奖项管理"></UDashboardNavbar>
-  <UTable :data="awards" :columns />
+  <UTable :data="awards" :columns>
+    <template #level-cell="{ row }">
+      {{ t(`awards.level.${row.original.level}`) }}
+    </template>
+    <template #type-cell="{ row }">
+      {{ t(`awards.type.${row.original.type}`) }}
+    </template>
+    <template #date-cell="{ row }">
+      {{ new Date(row.original.date).toLocaleString('zh-CN') }}
+    </template>
+    <template #status-cell="{ row }">
+      {{ t(`awards.status.${row.original.status}`) }}
+    </template>
+    <template #updatedAt-cell="{ row }">
+      {{ new Date(row.original.updatedAt).toLocaleString('zh-CN') }}
+    </template>
+    <template #actions-cell="{ row }">
+      <UButton
+        color="neutral"
+        icon="i-lucide-edit"
+        variant="ghost"
+        size="sm"
+        @click="openModalEditor(row.original)"
+      />
+    </template>
+  </UTable>
 
   <UModal v-model:open="openModal" title="编辑奖项">
     <template #body>

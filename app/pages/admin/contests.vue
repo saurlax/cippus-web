@@ -9,22 +9,7 @@ const columns = [
   { accessorKey: "description", header: "描述" },
   { accessorKey: "createdAt", header: "创建时间" },
   { accessorKey: "updatedAt", header: "更新时间" },
-  {
-    id: "actions",
-    cell: ({ row }: any) => {
-      const item = row.original;
-
-      return h(UButton, {
-        icon: "i-lucide-edit",
-        color: "neutral",
-        variant: "ghost",
-        onClick: () => {
-          currentContest.value = item;
-          openModal.value = true;
-        },
-      });
-    },
-  },
+  { id: "actions", header: "操作" },
 ];
 const openModal = ref(false);
 const currentContest = ref<any>({
@@ -32,12 +17,24 @@ const currentContest = ref<any>({
   description: "",
 });
 
-function createContest() {
+function openModalEditor(item?: any) {
+  if (item) {
+    currentContest.value = item;
+  } else {
+    currentContest.value = {
+      title: "",
+      description: "",
+    };
+  }
   openModal.value = true;
-  currentContest.value = {
-    title: "",
-    description: "",
-  };
+}
+
+function closeModal() {
+  openModal.value = false;
+}
+
+function createContest() {
+  openModalEditor();
 }
 
 async function updateContest() {
@@ -56,7 +53,7 @@ async function updateContest() {
     }
   }
   refresh();
-  openModal.value = false;
+  closeModal();
 }
 </script>
 
@@ -66,7 +63,23 @@ async function updateContest() {
       <UButton @click="createContest">新建竞赛</UButton>
     </template>
   </UDashboardNavbar>
-  <UTable :data="contests" :columns />
+  <UTable :data="contests" :columns>
+    <template #createdAt-cell="{ row }">
+      {{ new Date(row.original.createdAt).toLocaleString('zh-CN') }}
+    </template>
+    <template #updatedAt-cell="{ row }">
+      {{ new Date(row.original.updatedAt).toLocaleString('zh-CN') }}
+    </template>
+    <template #actions-cell="{ row }">
+      <UButton
+        icon="i-lucide-edit"
+        color="neutral"
+        variant="ghost"
+        size="sm"
+        @click="openModalEditor(row.original)"
+      />
+    </template>
+  </UTable>
   <UModal v-model:open="openModal" title="编辑竞赛">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit="updateContest">

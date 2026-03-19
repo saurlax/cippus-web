@@ -9,27 +9,8 @@ const columns = [
   { accessorKey: "email", header: "邮箱" },
   { accessorKey: "gender", header: "性别" },
   { accessorKey: "college", header: "学院" },
-  {
-    accessorKey: "admin",
-    header: "管理",
-    cell: ({ row }: any) => {
-      return row.original.admin ? "是" : "否";
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }: any) => {
-      return h(UButton, {
-        icon: "i-lucide-edit",
-        color: "neutral",
-        variant: "ghost",
-        onClick: () => {
-          currentUser.value = row.original;
-          openModal.value = true;
-        },
-      });
-    },
-  },
+  { accessorKey: "admin", header: "管理" },
+  { id: "actions", header: "操作" },
 ];
 const openModal = ref(false);
 const genderItems = ref([
@@ -45,18 +26,30 @@ const currentUser = ref<any>({
   college: "",
   admin: false,
 });
+ 
+ function openModalEditor(item?: any) {
+   if (item) {
+     currentUser.value = item;
+   } else {
+     currentUser.value = {
+       username: "",
+       password: "",
+       name: "",
+       email: "",
+       gender: "male",
+       college: "",
+       admin: false,
+     };
+   }
+   openModal.value = true;
+ }
+ 
+ function closeModal() {
+   openModal.value = false;
+ }
 
 function createUser() {
-  openModal.value = true;
-  currentUser.value = {
-    username: "",
-    password: "",
-    name: "",
-    email: "",
-    gender: "male",
-    college: "",
-    admin: false,
-  };
+  openModalEditor();
 }
 
 async function updateUser() {
@@ -75,7 +68,7 @@ async function updateUser() {
     }
   }
   users.value = await $fetch<any>("/api/admin/users");
-  openModal.value = false;
+  closeModal();
 }
 </script>
 
@@ -85,7 +78,20 @@ async function updateUser() {
       <UButton @click="createUser">新建用户</UButton>
     </template>
   </UDashboardNavbar>
-  <UTable :data="users" :columns />
+  <UTable :data="users" :columns>
+    <template #admin-cell="{ row }">
+      {{ row.original.admin ? "是" : "否" }}
+    </template>
+    <template #actions-cell="{ row }">
+      <UButton
+        icon="i-lucide-edit"
+          size="sm"
+        color="neutral"
+        variant="ghost"
+        @click="openModalEditor(row.original)"
+      />
+    </template>
+  </UTable>
   <UModal v-model:open="openModal" title="编辑用户">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit="updateUser">

@@ -11,22 +11,7 @@ const columns = [
   { accessorKey: "category", header: "分类" },
   { accessorKey: "createdAt", header: "创建时间" },
   { accessorKey: "updatedAt", header: "更新时间" },
-  {
-    id: "actions",
-    cell: ({ row }: any) => {
-      const item = row.original;
-
-      return h(UButton, {
-        icon: "i-lucide-edit",
-        color: "neutral",
-        variant: "ghost",
-        onClick: () => {
-          currentNotice.value = item;
-          openModal.value = true;
-        },
-      });
-    },
-  },
+  { id: "actions", header: "操作" },
 ];
 const openModal = ref(false);
 const currentNotice = ref<any>({
@@ -35,13 +20,25 @@ const currentNotice = ref<any>({
   content: "",
 });
 
-function createNotice() {
+function openModalEditor(item?: any) {
+  if (item) {
+    currentNotice.value = item;
+  } else {
+    currentNotice.value = {
+      title: "",
+      category: "",
+      content: "",
+    };
+  }
   openModal.value = true;
-  currentNotice.value = {
-    title: "",
-    category: "",
-    content: "",
-  };
+}
+
+function closeModal() {
+  openModal.value = false;
+}
+
+function createNotice() {
+  openModalEditor();
 }
 
 async function updateNotice() {
@@ -60,7 +57,7 @@ async function updateNotice() {
     }
   }
   await refreshNotices();
-  openModal.value = false;
+  closeModal();
 }
 </script>
 
@@ -70,7 +67,23 @@ async function updateNotice() {
       <UButton @click="createNotice">新建公告</UButton>
     </template>
   </UDashboardNavbar>
-  <UTable :data="notices" :columns />
+  <UTable :data="notices" :columns>
+    <template #createdAt-cell="{ row }">
+      {{ new Date(row.original.createdAt).toLocaleString('zh-CN') }}
+    </template>
+    <template #updatedAt-cell="{ row }">
+      {{ new Date(row.original.updatedAt).toLocaleString('zh-CN') }}
+    </template>
+    <template #actions-cell="{ row }">
+      <UButton
+        icon="i-lucide-edit"
+        color="neutral"
+        variant="ghost"
+        size="sm"
+        @click="openModalEditor(row.original)"
+      />
+    </template>
+  </UTable>
   <UModal v-model:open="openModal" title="编辑公告">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit="updateNotice">

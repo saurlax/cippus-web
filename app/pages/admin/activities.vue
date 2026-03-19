@@ -127,22 +127,7 @@ const columns = [
   { accessorKey: "description", header: "描述" },
   { accessorKey: "startDate", header: "开始日期" },
   { accessorKey: "endDate", header: "结束日期" },
-  {
-    id: "actions",
-    cell: ({ row }: any) => {
-      const item = row.original;
-
-      return h(UButton, {
-        icon: "i-lucide-edit",
-        color: "neutral",
-        variant: "ghost",
-        onClick: () => {
-          openEditor(item);
-          openModal.value = true;
-        },
-      });
-    },
-  },
+  { id: "actions", header: "操作" },
 ];
 
 const openModal = ref(false);
@@ -157,6 +142,15 @@ const innovationBaseRows = ref<InnovationBaseRow[]>([]);
 const contestExtraRows = ref<ContestExtraRow[]>([]);
 const contestMultiplierRows = ref<ContestMultiplierRow[]>([]);
 const otherEntries = ref<ScoringConfig>({});
+
+function openModalEditor(item?: any) {
+  openEditor(item);
+  openModal.value = true;
+}
+
+function closeModal() {
+  openModal.value = false;
+}
 
 function readNumber(value: ScoringValue | undefined, fallback = 0): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -378,8 +372,7 @@ function applyJsonEditor() {
 }
 
 function createActivity() {
-  openModal.value = true;
-  openEditor();
+  openModalEditor();
 }
 
 async function updateActivity() {
@@ -406,7 +399,7 @@ async function updateActivity() {
     }
 
     activities.value = await $fetch<any>("/api/admin/activities");
-    openModal.value = false;
+    closeModal();
     toast.add({ title: "活动已保存", color: "success" });
   } catch (e: any) {
     toast.add({
@@ -442,7 +435,23 @@ watch(
       <UButton @click="createActivity">新建活动</UButton>
     </template>
   </UDashboardNavbar>
-  <UTable :data="activities" :columns />
+  <UTable :data="activities" :columns>
+    <template #startDate-cell="{ row }">
+      {{ new Date(row.original.startDate).toLocaleString('zh-CN') }}
+    </template>
+    <template #endDate-cell="{ row }">
+      {{ new Date(row.original.endDate).toLocaleString('zh-CN') }}
+    </template>
+    <template #actions-cell="{ row }">
+      <UButton
+        icon="i-lucide-edit"
+        size="sm"
+        color="neutral"
+        variant="ghost"
+        @click="openModalEditor(row.original)"
+      />
+    </template>
+  </UTable>
   <UModal v-model:open="openModal" title="编辑活动">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit="updateActivity">
