@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { activityDefaultScoringConfig } from "#shared/types/db";
+
 const UButton = resolveComponent("UButton");
 const toast = useToast();
 const { t } = useI18n();
@@ -112,12 +114,14 @@ function parseJsonScoringConfig(text: string): ScoringConfig {
 }
 
 function createEmptyActivity() {
+  const defaultConfig = normalizeScoringConfig(activityDefaultScoringConfig);
+
   return {
     name: "",
     description: "",
     startDate: toDateInputValue(new Date()),
     endDate: toDateInputValue(new Date()),
-    scoringConfig: {} as ScoringConfig,
+    scoringConfig: { ...defaultConfig } as ScoringConfig,
   };
 }
 
@@ -133,7 +137,9 @@ const columns = [
 const openModal = ref(false);
 const currentActivity = ref<any>(createEmptyActivity());
 const editorMode = ref<"visual" | "json">("visual");
-const scoringConfigText = ref("{}");
+const scoringConfigText = ref(
+  JSON.stringify(currentActivity.value.scoringConfig || {}, null, 2),
+);
 
 const awardBaseRows = ref<AwardBaseRow[]>([]);
 const paperBaseRows = ref<PaperBaseRow[]>([]);

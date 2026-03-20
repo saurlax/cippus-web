@@ -67,6 +67,83 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "innovation",
 ]);
 
+export type ScoringValue = string | number | boolean;
+export type ScoringConfig = Record<string, ScoringValue>;
+
+export const defaultScoringConfig: ScoringConfig = {
+  // 国家级
+  "award.national.first_place": 20,
+  "award.national.second_place": 18,
+  "award.national.third_place": 16,
+  "award.national.fourth_place": 14,
+  "award.national.fifth_place": 13,
+  "award.national.sixth_place": 12,
+  "award.national.first_prize": 20,
+  "award.national.second_prize": 17,
+  "award.national.third_prize": 14,
+  "award.national.other": 6,
+  "award.national.recommended_not_awarded": 5,
+
+  // 省级
+  "award.provincial.first_place": 15,
+  "award.provincial.second_place": 13,
+  "award.provincial.third_place": 11,
+  "award.provincial.fourth_place": 9,
+  "award.provincial.fifth_place": 8,
+  "award.provincial.sixth_place": 7,
+  "award.provincial.first_prize": 15,
+  "award.provincial.second_prize": 12,
+  "award.provincial.third_prize": 9,
+  "award.provincial.other": 4,
+  "award.provincial.recommended_not_awarded": 3,
+
+  // 市级
+  "award.municipal.first_place": 11,
+  "award.municipal.second_place": 9,
+  "award.municipal.third_place": 7,
+  "award.municipal.fourth_place": 5,
+  "award.municipal.fifth_place": 4,
+  "award.municipal.sixth_place": 3,
+  "award.municipal.first_prize": 11,
+  "award.municipal.second_prize": 8,
+  "award.municipal.third_prize": 5,
+  "award.municipal.other": 3,
+  "award.municipal.recommended_not_awarded": 2,
+
+  // 校级
+  "award.school.first_place": 6,
+  "award.school.second_place": 5,
+  "award.school.third_place": 4,
+  "award.school.fourth_place": 3,
+  "award.school.fifth_place": 2,
+  "award.school.sixth_place": 1,
+  "award.school.first_prize": 6,
+  "award.school.second_prize": 4,
+  "award.school.third_prize": 2,
+  "award.school.other": 1,
+
+  // 学院级
+  "award.college.first_place": 3,
+  "award.college.second_place": 2,
+  "award.college.third_place": 1,
+  "award.college.recommended_not_awarded": 1,
+
+  // 论文
+  "paper.influential": 20,
+  "paper.other": 10,
+
+  // 专利
+  "patent.domestic_invention": 20,
+  "patent.international_invention": 25,
+  "patent.utility_model": 10,
+  "patent.design": 5,
+  "patent.software_copyright": 10,
+
+  // 大创
+  "innovation.excellent": 5,
+  "innovation.qualified": 3,
+};
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -191,9 +268,9 @@ export const activities = pgTable("activities", {
   startDate: timestamp("start_date", { mode: "date" }).notNull(),
   endDate: timestamp("end_date", { mode: "date" }).notNull(),
   scoringConfig: jsonb("scoring_config")
-    .$type<Record<string, string | number | boolean>>()
+    .$type<ScoringConfig>()
     .notNull()
-    .default({}),
+    .default(defaultScoringConfig),
 });
 
 export const applications = pgTable("applications", {

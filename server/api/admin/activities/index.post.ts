@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
       description: body.description,
       startDate: body.startDate,
       endDate: body.endDate,
-      scoringConfig: body.scoringConfig || {},
+      ...(body.scoringConfig ? { scoringConfig: body.scoringConfig } : {}),
     })
     .returning();
 
