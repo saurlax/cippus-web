@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { AuthFormProps, FormSubmitEvent } from "@nuxt/ui";
 const { fetch } = useUserSession();
-const appConfig = useAppConfig();
+const { public: config } = useRuntimeConfig();
 const toast = useToast();
 const providers = ref([
   {
     label: "通过统一身份认证登录",
     icon: "i-lucide-log-in",
-    to: `${appConfig.casBaseUrl}/login?service=${appConfig.casServiceUrl}`,
+    to: `${config.casBaseUrl}/login?service=${config.casServiceUrl}`,
   },
 ]);
 

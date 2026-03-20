@@ -2,10 +2,10 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 
 export default defineEventHandler(async (event) => {
-  const { casBaseUrl, casServiceUrl } = useAppConfig();
+  const { public: config } = useRuntimeConfig();
   const { ticket } = getQuery(event);
   const rawXml = await $fetch<string>(
-    `${casBaseUrl}/serviceValidate?service=${casServiceUrl}&ticket=${ticket}`
+    `${config.casBaseUrl}/serviceValidate?service=${config.casServiceUrl}&ticket=${ticket}`
   );
   const username = rawXml.match(/<cas:ID_NUMBER>(\d+)<\/cas:ID_NUMBER>/)?.[1];
   const name = rawXml.match(/<cas:USER_NAME>([^<]+)<\/cas:USER_NAME>/)?.[1];
