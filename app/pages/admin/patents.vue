@@ -83,13 +83,13 @@ async function editPatent() {
       {{ t(`patents.type.${row.original.type}`) }}
     </template>
     <template #date-cell="{ row }">
-      {{ new Date(row.original.date).toLocaleString('zh-CN') }}
+      {{ new Date(row.original.date).toLocaleString() }}
     </template>
     <template #status-cell="{ row }">
       {{ t(`awards.status.${row.original.status}`) }}
     </template>
     <template #updatedAt-cell="{ row }">
-      {{ new Date(row.original.updatedAt).toLocaleString('zh-CN') }}
+      {{ new Date(row.original.updatedAt).toLocaleString() }}
     </template>
     <template #actions-cell="{ row }">
       <UButton

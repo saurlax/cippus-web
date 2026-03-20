@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import dayjs from "dayjs";
-
 const { data: activities } = await useFetch("/api/activities");
 
 const posts = computed(() => {

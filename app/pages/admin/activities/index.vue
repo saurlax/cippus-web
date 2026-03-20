@@ -436,11 +436,16 @@ watch(
     </template>
   </UDashboardNavbar>
   <UTable :data="activities" :columns>
+    <template #name-cell="{ row }">
+      <ULink :to="`/admin/activities/${row.original.id}`" class="text-primary hover:underline">
+        {{ row.original.name }}
+      </ULink>
+    </template>
     <template #startDate-cell="{ row }">
-      {{ new Date(row.original.startDate).toLocaleString('zh-CN') }}
+      {{ new Date(row.original.startDate).toLocaleString() }}
     </template>
     <template #endDate-cell="{ row }">
-      {{ new Date(row.original.endDate).toLocaleString('zh-CN') }}
+      {{ new Date(row.original.endDate).toLocaleString() }}
     </template>
     <template #actions-cell="{ row }">
       <UButton

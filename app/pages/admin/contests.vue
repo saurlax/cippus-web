@@ -65,10 +65,10 @@ async function updateContest() {
   </UDashboardNavbar>
   <UTable :data="contests" :columns>
     <template #createdAt-cell="{ row }">
-      {{ new Date(row.original.createdAt).toLocaleString('zh-CN') }}
+      {{ new Date(row.original.createdAt).toLocaleString() }}
     </template>
     <template #updatedAt-cell="{ row }">
-      {{ new Date(row.original.updatedAt).toLocaleString('zh-CN') }}
+      {{ new Date(row.original.updatedAt).toLocaleString() }}
     </template>
     <template #actions-cell="{ row }">
       <UButton
