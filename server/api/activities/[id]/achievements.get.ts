@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const { activity, awards, papers, patents, innovations } =
-    await listEligibleAchievements(activityId, user.id);
+    await listEligibleAchievements(activityId, session.user.username);
 
   const ownApplication = await db.query.applications.findFirst({
     where: and(

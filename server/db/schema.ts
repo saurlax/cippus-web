@@ -42,10 +42,7 @@ export const awardTypeEnum = pgEnum("award_type", [
   "recommended_not_awarded",
 ]);
 
-export const paperTypeEnum = pgEnum("paper_type", [
-  "influential",
-  "other",
-]);
+export const paperTypeEnum = pgEnum("paper_type", ["influential", "other"]);
 
 export const patentTypeEnum = pgEnum("patent_type", [
   "domestic_invention",
@@ -67,7 +64,7 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "innovation",
 ]);
 
-export type ScoringValue = string | number | boolean;
+export type ScoringValue = string | number | boolean | number[];
 export type ScoringConfig = Record<string, ScoringValue>;
 
 export const defaultScoringConfig: ScoringConfig = {
@@ -127,10 +124,12 @@ export const defaultScoringConfig: ScoringConfig = {
   "award.college.second_place": 2,
   "award.college.third_place": 1,
   "award.college.recommended_not_awarded": 1,
+  "ranking.award": [1, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2],
 
   // 论文
   "paper.influential": 20,
   "paper.other": 10,
+  "ranking.paper": [1, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2],
 
   // 专利
   "patent.domestic_invention": 20,
@@ -138,10 +137,12 @@ export const defaultScoringConfig: ScoringConfig = {
   "patent.utility_model": 10,
   "patent.design": 5,
   "patent.software_copyright": 10,
+  "ranking.patent": [1, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2],
 
   // 大创
   "innovation.excellent": 5,
   "innovation.qualified": 3,
+  "ranking.innovation": [1, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2],
 };
 
 export const users = pgTable("users", {
@@ -195,6 +196,7 @@ export const awards = pgTable("awards", {
     }),
   level: awardLevelEnum("level").notNull(),
   type: awardTypeEnum("type").notNull(),
+  members: text("members").array().notNull().default([]),
   evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull().defaultNow(),
@@ -214,6 +216,7 @@ export const papers = pgTable("papers", {
     }),
   name: text("name").notNull(),
   type: paperTypeEnum("type").notNull(),
+  members: text("members").array().notNull().default([]),
   evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
@@ -233,6 +236,7 @@ export const patents = pgTable("patents", {
     }),
   name: text("name").notNull(),
   type: patentTypeEnum("type").notNull(),
+  members: text("members").array().notNull().default([]),
   evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
@@ -252,6 +256,7 @@ export const innovations = pgTable("innovations", {
     }),
   name: text("name").notNull(),
   type: innovationTypeEnum("type").notNull(),
+  members: text("members").array().notNull().default([]),
   evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
@@ -314,9 +319,7 @@ export const applicationItems = pgTable(
       .default("1"),
     extraScore: integer("extra_score").notNull().default(0),
     finalScore: integer("final_score").notNull().default(0),
-    createdAt: timestamp("created_at", { mode: "date" })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { mode: "date" })
       .notNull()
       .defaultNow()
@@ -365,27 +368,27 @@ export const patentsRelations = relations(patents, ({ one }) => ({
   }),
 }));
 
-export const innovationsRelations = relations(
-  innovations,
-  ({ one }) => ({
-    user: one(users, {
-      fields: [innovations.userId],
-      references: [users.id],
-    }),
-  }),
-);
-
-export const applicationsRelations = relations(applications, ({ one, many }) => ({
+export const innovationsRelations = relations(innovations, ({ one }) => ({
   user: one(users, {
-    fields: [applications.userId],
+    fields: [innovations.userId],
     references: [users.id],
   }),
-  activity: one(activities, {
-    fields: [applications.activityId],
-    references: [activities.id],
-  }),
-  items: many(applicationItems),
 }));
+
+export const applicationsRelations = relations(
+  applications,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [applications.userId],
+      references: [users.id],
+    }),
+    activity: one(activities, {
+      fields: [applications.activityId],
+      references: [activities.id],
+    }),
+    items: many(applicationItems),
+  }),
+);
 
 export const applicationItemsRelations = relations(
   applicationItems,

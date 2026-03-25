@@ -5,7 +5,7 @@ const UButton = resolveComponent("UButton");
 const toast = useToast();
 const { t } = useI18n();
 
-type ScoringValue = string | number | boolean;
+type ScoringValue = string | number | boolean | number[];
 type ScoringConfig = Record<string, ScoringValue>;
 
 type AwardBaseRow = {
@@ -43,6 +43,24 @@ type ContestMultiplierRow = {
 
 const { data: activities } = await useFetch("/api/admin/activities");
 const { data: contests } = await useFetch("/api/contests");
+
+function readDefaultRankingFromShared(key: keyof typeof activityDefaultScoringConfig) {
+  const value = activityDefaultScoringConfig[key];
+  if (!Array.isArray(value)) {
+    return [] as number[];
+  }
+
+  return value
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item));
+}
+
+const defaultRankingByType = {
+  award: readDefaultRankingFromShared("ranking.award"),
+  paper: readDefaultRankingFromShared("ranking.paper"),
+  patent: readDefaultRankingFromShared("ranking.patent"),
+  innovation: readDefaultRankingFromShared("ranking.innovation"),
+};
 
 const levelItems = awardLevelValues.map((value) => ({
   value,
@@ -82,12 +100,16 @@ function normalizeScoringConfig(input: unknown): ScoringConfig {
 
   const config: ScoringConfig = {};
   for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
-    if (
-      typeof value === "string" ||
-      typeof value === "number" ||
-      typeof value === "boolean"
-    ) {
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
       config[key] = value;
+      continue;
+    }
+
+    if (
+      Array.isArray(value) &&
+      value.every((item) => typeof item === "number" && Number.isFinite(item))
+    ) {
+      config[key] = [...value];
     }
   }
   return config;
@@ -107,7 +129,7 @@ function parseJsonScoringConfig(text: string): ScoringConfig {
 
   const config = normalizeScoringConfig(parsed);
   if (Object.keys(config).length !== Object.keys(parsed as object).length) {
-    throw new Error("scoringConfig 的 value 仅支持 string/number/boolean");
+    throw new Error("scoringConfig 的 value 仅支持 string/number/boolean/number[]");
   }
 
   return config;
@@ -148,6 +170,10 @@ const innovationBaseRows = ref<InnovationBaseRow[]>([]);
 const contestExtraRows = ref<ContestExtraRow[]>([]);
 const contestMultiplierRows = ref<ContestMultiplierRow[]>([]);
 const otherEntries = ref<ScoringConfig>({});
+const awardRankingCoefficients = ref<number[]>([...defaultRankingByType.award]);
+const paperRankingCoefficients = ref<number[]>([...defaultRankingByType.paper]);
+const patentRankingCoefficients = ref<number[]>([...defaultRankingByType.patent]);
+const innovationRankingCoefficients = ref<number[]>([...defaultRankingByType.innovation]);
 
 function openModalEditor(item?: any) {
   openEditor(item);
@@ -165,6 +191,31 @@ function readNumber(value: ScoringValue | undefined, fallback = 0): number {
     return Number.isFinite(parsed) ? parsed : fallback;
   }
   return fallback;
+}
+
+function readRankingCoefficients(value: ScoringValue | undefined, fallback: number[]) {
+  if (Array.isArray(value)) {
+    const parsed = value
+      .map((item) => Number(item))
+      .filter((item) => Number.isFinite(item));
+
+    if (parsed.length) {
+      return parsed;
+    }
+  }
+
+  return [...fallback];
+}
+
+function addRankingCoefficient(target: number[]) {
+  target.push(0.2);
+}
+
+function removeRankingCoefficient(target: number[], index: number) {
+  if (target.length <= 1) {
+    return;
+  }
+  target.splice(index, 1);
 }
 
 function openEditor(item?: any) {
@@ -189,6 +240,22 @@ function buildVisualRowsFromConfig(config: ScoringConfig = {}) {
   contestExtraRows.value = [];
   contestMultiplierRows.value = [];
   otherEntries.value = {};
+  awardRankingCoefficients.value = readRankingCoefficients(
+    config["ranking.award"],
+    defaultRankingByType.award,
+  );
+  paperRankingCoefficients.value = readRankingCoefficients(
+    config["ranking.paper"],
+    defaultRankingByType.paper,
+  );
+  patentRankingCoefficients.value = readRankingCoefficients(
+    config["ranking.patent"],
+    defaultRankingByType.patent,
+  );
+  innovationRankingCoefficients.value = readRankingCoefficients(
+    config["ranking.innovation"],
+    defaultRankingByType.innovation,
+  );
 
   // 构建所有基础分行
   for (const level of awardLevelValues) {
@@ -258,6 +325,7 @@ function buildVisualRowsFromConfig(config: ScoringConfig = {}) {
       !key.startsWith("paper.") &&
       !key.startsWith("patent.") &&
       !key.startsWith("innovation.") &&
+      !key.startsWith("ranking.") &&
       !key.startsWith("contest.")
     ) {
       otherEntries.value[key] = value;
@@ -269,6 +337,11 @@ function buildVisualRowsFromConfig(config: ScoringConfig = {}) {
 
 function buildConfigFromVisual(): ScoringConfig {
   const next: ScoringConfig = { ...otherEntries.value };
+
+  next["ranking.award"] = [...awardRankingCoefficients.value];
+  next["ranking.paper"] = [...paperRankingCoefficients.value];
+  next["ranking.patent"] = [...patentRankingCoefficients.value];
+  next["ranking.innovation"] = [...innovationRankingCoefficients.value];
 
   for (const row of awardBaseRows.value) {
     if (row.level.trim() && row.type.trim()) {
@@ -424,6 +497,10 @@ watch(
     innovationBaseRows,
     contestExtraRows,
     contestMultiplierRows,
+    awardRankingCoefficients,
+    paperRankingCoefficients,
+    patentRankingCoefficients,
+    innovationRankingCoefficients,
   ],
   () => {
     if (editorMode.value === "visual") {
@@ -517,6 +594,146 @@ watch(
           </div>
 
           <template v-if="editorMode === 'visual'">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">奖项排名系数</p>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-lucide-plus"
+                  @click="addRankingCoefficient(awardRankingCoefficients)"
+                >
+                  添加
+                </UButton>
+              </div>
+              <div
+                v-for="(value, idx) in awardRankingCoefficients"
+                :key="`award-ranking-${idx}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <div class="col-span-3 text-sm">第 {{ idx + 1 }} 名</div>
+                <UInput
+                  class="col-span-8"
+                  type="number"
+                  step="0.01"
+                  v-model.number="awardRankingCoefficients[idx]"
+                />
+                <UButton
+                  class="col-span-1"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  @click="removeRankingCoefficient(awardRankingCoefficients, idx)"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">论文排名系数</p>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-lucide-plus"
+                  @click="addRankingCoefficient(paperRankingCoefficients)"
+                >
+                  添加
+                </UButton>
+              </div>
+              <div
+                v-for="(value, idx) in paperRankingCoefficients"
+                :key="`paper-ranking-${idx}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <div class="col-span-3 text-sm">第 {{ idx + 1 }} 名</div>
+                <UInput
+                  class="col-span-8"
+                  type="number"
+                  step="0.01"
+                  v-model.number="paperRankingCoefficients[idx]"
+                />
+                <UButton
+                  class="col-span-1"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  @click="removeRankingCoefficient(paperRankingCoefficients, idx)"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">专利排名系数</p>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-lucide-plus"
+                  @click="addRankingCoefficient(patentRankingCoefficients)"
+                >
+                  添加
+                </UButton>
+              </div>
+              <div
+                v-for="(value, idx) in patentRankingCoefficients"
+                :key="`patent-ranking-${idx}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <div class="col-span-3 text-sm">第 {{ idx + 1 }} 名</div>
+                <UInput
+                  class="col-span-8"
+                  type="number"
+                  step="0.01"
+                  v-model.number="patentRankingCoefficients[idx]"
+                />
+                <UButton
+                  class="col-span-1"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  @click="removeRankingCoefficient(patentRankingCoefficients, idx)"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">大创排名系数</p>
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-lucide-plus"
+                  @click="addRankingCoefficient(innovationRankingCoefficients)"
+                >
+                  添加
+                </UButton>
+              </div>
+              <div
+                v-for="(value, idx) in innovationRankingCoefficients"
+                :key="`innovation-ranking-${idx}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <div class="col-span-3 text-sm">第 {{ idx + 1 }} 名</div>
+                <UInput
+                  class="col-span-8"
+                  type="number"
+                  step="0.01"
+                  v-model.number="innovationRankingCoefficients[idx]"
+                />
+                <UButton
+                  class="col-span-1"
+                  size="xs"
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  @click="removeRankingCoefficient(innovationRankingCoefficients, idx)"
+                />
+              </div>
+            </div>
+
             <div class="space-y-2">
               <p class="text-sm font-medium">奖项基础分</p>
               <div

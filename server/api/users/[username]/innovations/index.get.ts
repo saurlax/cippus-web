@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 
 export default defineEventHandler(async (event) => {
@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
   const user = await db.query.users.findFirst({
     where: eq(schema.users.username, username),
-    columns: { id: true },
+    columns: { username: true },
   });
 
   if (!user) {
@@ -17,9 +17,9 @@ export default defineEventHandler(async (event) => {
 
   return db.query.innovations.findMany({
     where: canViewAll
-      ? eq(schema.innovations.userId, user.id)
+      ? sql`"innovations"."members" @> ARRAY[${username}]::text[]`
       : and(
-          eq(schema.innovations.userId, user.id),
+          sql`"innovations"."members" @> ARRAY[${username}]::text[]`,
           eq(schema.innovations.status, "approved"),
         ),
     orderBy: schema.innovations.updatedAt,

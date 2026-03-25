@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
 
   const eligible = await listEligibleAchievements(
     application.activityId,
-    application.userId,
+    application.user.username,
   );
 
   let allowed = false;

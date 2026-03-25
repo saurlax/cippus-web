@@ -1,9 +1,28 @@
-import { and, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
+import { activityDefaultScoringConfig } from "#shared/types/db";
 
-type ScoringValue = string | number | boolean;
+type ScoringValue = string | number | boolean | number[];
 type ScoringConfig = Record<string, ScoringValue>;
 type AchievementTypeValue = "award" | "paper" | "patent" | "innovation";
+
+function readDefaultRankingFromShared(key: keyof typeof activityDefaultScoringConfig) {
+  const value = activityDefaultScoringConfig[key];
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item));
+}
+
+const defaultRankingConfig: Record<AchievementTypeValue, number[]> = {
+  award: readDefaultRankingFromShared("ranking.award"),
+  paper: readDefaultRankingFromShared("ranking.paper"),
+  patent: readDefaultRankingFromShared("ranking.patent"),
+  innovation: readDefaultRankingFromShared("ranking.innovation"),
+};
 
 type AchievementMaps = {
   award: Map<number, Awaited<ReturnType<typeof getAwards>>[number]>;
@@ -32,6 +51,49 @@ function roundFinalScore(value: number): number {
     return 0;
   }
   return Math.round(value);
+}
+
+function readNumberArray(value: ScoringValue | undefined, fallback: number[]): number[] {
+  if (Array.isArray(value)) {
+    const parsed = value
+      .map((item) => Number(item))
+      .filter((item) => Number.isFinite(item));
+
+    if (parsed.length) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
+function getMemberCoefficient(
+  achievementType: AchievementTypeValue,
+  achievement: any,
+  applicantUsername: string,
+  scoringConfig: ScoringConfig,
+): number {
+  const coefficients = readNumberArray(
+    scoringConfig[`ranking.${achievementType}`],
+    defaultRankingConfig[achievementType],
+  );
+
+  const members = Array.isArray(achievement?.members)
+    ? achievement.members
+        .map((item: unknown) => String(item || "").trim())
+        .filter((item: string) => item.length > 0)
+    : [];
+
+  const memberIndex = members.indexOf(applicantUsername);
+  if (memberIndex < 0) {
+    return 1;
+  }
+
+  if (memberIndex >= coefficients.length) {
+    return coefficients[coefficients.length - 1] || 1;
+  }
+
+  return coefficients[memberIndex] || 1;
 }
 
 async function getAwards(ids: number[]) {
@@ -133,6 +195,7 @@ export function computeScoresForAchievement(
   achievementType: AchievementTypeValue,
   achievement: any,
   scoringConfig: ScoringConfig,
+  applicantUsername: string,
 ) {
   if (!achievement) {
     return {
@@ -157,47 +220,72 @@ export function computeScoresForAchievement(
       scoringConfig[`contest.extra.${contestId}.${level}`],
       0,
     );
+    const memberCoefficient = getMemberCoefficient(
+      achievementType,
+      achievement,
+      applicantUsername,
+      scoringConfig,
+    );
+    const totalMultiplier = multiplier * memberCoefficient;
 
     return {
       baseScore,
-      multiplier,
+      multiplier: totalMultiplier,
       extraScore,
-      finalScore: roundFinalScore(baseScore * multiplier + extraScore),
+      finalScore: roundFinalScore((baseScore * multiplier + extraScore) * memberCoefficient),
     };
   }
 
   if (achievementType === "paper") {
     const type = String(achievement.type || "");
     const baseScore = readNumber(scoringConfig[`paper.${type}`], 0);
+    const memberCoefficient = getMemberCoefficient(
+      achievementType,
+      achievement,
+      applicantUsername,
+      scoringConfig,
+    );
 
     return {
       baseScore,
-      multiplier: 1,
+      multiplier: memberCoefficient,
       extraScore: 0,
-      finalScore: roundFinalScore(baseScore),
+      finalScore: roundFinalScore(baseScore * memberCoefficient),
     };
   }
 
   if (achievementType === "patent") {
     const type = String(achievement.type || "");
     const baseScore = readNumber(scoringConfig[`patent.${type}`], 0);
+    const memberCoefficient = getMemberCoefficient(
+      achievementType,
+      achievement,
+      applicantUsername,
+      scoringConfig,
+    );
 
     return {
       baseScore,
-      multiplier: 1,
+      multiplier: memberCoefficient,
       extraScore: 0,
-      finalScore: roundFinalScore(baseScore),
+      finalScore: roundFinalScore(baseScore * memberCoefficient),
     };
   }
 
   const type = String(achievement.type || "");
   const baseScore = readNumber(scoringConfig[`innovation.${type}`], 0);
+  const memberCoefficient = getMemberCoefficient(
+    achievementType,
+    achievement,
+    applicantUsername,
+    scoringConfig,
+  );
 
   return {
     baseScore,
-    multiplier: 1,
+    multiplier: memberCoefficient,
     extraScore: 0,
-    finalScore: roundFinalScore(baseScore),
+    finalScore: roundFinalScore(baseScore * memberCoefficient),
   };
 }
 
@@ -300,6 +388,7 @@ export async function recalculateApplicationById(applicationId: number) {
   const application = await db.query.applications.findFirst({
     where: eq(schema.applications.id, applicationId),
     with: {
+      user: true,
       activity: true,
       items: true,
     },
@@ -325,6 +414,7 @@ export async function recalculateApplicationById(applicationId: number) {
       item.achievementType,
       (display as any).achievement,
       scoringConfig,
+      application.user.username,
     );
 
     await db
@@ -370,7 +460,7 @@ export async function recalculateApplicationById(applicationId: number) {
   };
 }
 
-export async function listEligibleAchievements(activityId: number, userId: number) {
+export async function listEligibleAchievements(activityId: number, username: string) {
   const activity = await db.query.activities.findFirst({
     where: eq(schema.activities.id, activityId),
   });
@@ -385,7 +475,7 @@ export async function listEligibleAchievements(activityId: number, userId: numbe
   const [awards, papers, patents, innovations] = await Promise.all([
     db.query.awards.findMany({
       where: and(
-        eq(schema.awards.userId, userId),
+        sql`"awards"."members" @> ARRAY[${username}]::text[]`,
         eq(schema.awards.status, "approved"),
         gte(schema.awards.date, startDate),
         lte(schema.awards.date, endDate),
@@ -397,7 +487,7 @@ export async function listEligibleAchievements(activityId: number, userId: numbe
     }),
     db.query.papers.findMany({
       where: and(
-        eq(schema.papers.userId, userId),
+        sql`"papers"."members" @> ARRAY[${username}]::text[]`,
         eq(schema.papers.status, "approved"),
         gte(schema.papers.date, startDate),
         lte(schema.papers.date, endDate),
@@ -406,7 +496,7 @@ export async function listEligibleAchievements(activityId: number, userId: numbe
     }),
     db.query.patents.findMany({
       where: and(
-        eq(schema.patents.userId, userId),
+        sql`"patents"."members" @> ARRAY[${username}]::text[]`,
         eq(schema.patents.status, "approved"),
         gte(schema.patents.date, startDate),
         lte(schema.patents.date, endDate),
@@ -415,7 +505,7 @@ export async function listEligibleAchievements(activityId: number, userId: numbe
     }),
     db.query.innovations.findMany({
       where: and(
-        eq(schema.innovations.userId, userId),
+        sql`"innovations"."members" @> ARRAY[${username}]::text[]`,
         eq(schema.innovations.status, "approved"),
         gte(schema.innovations.date, startDate),
         lte(schema.innovations.date, endDate),

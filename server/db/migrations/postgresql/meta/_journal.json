@@ -22,6 +22,20 @@
       "when": 1773836286271,
       "tag": "0002_volatile_magneto",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774431548233,
+      "tag": "0003_young_daimon_hellstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774432311109,
+      "tag": "0004_sad_slipstream",
+      "breakpoints": true
     }
   ]
 }

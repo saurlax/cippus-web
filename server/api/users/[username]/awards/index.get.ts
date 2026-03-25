@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 
 export default defineEventHandler(async (event) => {
@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
 
   const user = await db.query.users.findFirst({
     where: eq(schema.users.username, username),
-    columns: { id: true },
+    columns: { username: true },
   });
 
   if (!user) {
@@ -21,8 +21,11 @@ export default defineEventHandler(async (event) => {
 
   const awards = await db.query.awards.findMany({
     where: canViewAll
-      ? eq(schema.awards.userId, user.id)
-      : and(eq(schema.awards.userId, user.id), eq(schema.awards.status, "approved")),
+      ? sql`"awards"."members" @> ARRAY[${username}]::text[]`
+      : and(
+          sql`"awards"."members" @> ARRAY[${username}]::text[]`,
+          eq(schema.awards.status, "approved"),
+        ),
     orderBy: schema.awards.updatedAt,
     with: {
       contest: true,
