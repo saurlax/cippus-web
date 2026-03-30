@@ -63,7 +63,7 @@ const awardForm = reactive({
   evidences: [] as string[],
 });
 const awardUploadFiles = ref<File[]>([]);
-const awardMembersInput = ref("");
+const awardMembersTags = ref<string[]>([]);
 
 const openRecord = ref(false);
 const savingRecord = ref(false);
@@ -78,7 +78,7 @@ const recordForm = reactive({
   evidences: [] as string[],
 });
 const recordUploadFiles = ref<File[]>([]);
-const recordMembersInput = ref("");
+const recordMembersTags = ref<string[]>([]);
 
 const genderItems = ref([
   { label: "男", value: "male" },
@@ -223,19 +223,14 @@ function getRecordTypeLabel(kind: RecordKind, value: string) {
   }
 }
 
-function parseMembersInput(value: string) {
+function normalizeMembersList(value: string[] | undefined) {
   return Array.from(
     new Set(
-      value
-        .split(/[，,\s]+/)
+      (value || [])
         .map((item) => item.trim())
         .filter((item) => item.length > 0),
     ),
   );
-}
-
-function formatMembersInput(members: string[] | undefined) {
-  return (members || []).join(", ");
 }
 
 function defaultMembers() {
@@ -273,7 +268,7 @@ function startAddAward() {
   awardForm.type = undefined;
   awardForm.date = "";
   awardForm.members = defaultMembers();
-  awardMembersInput.value = formatMembersInput(awardForm.members);
+  awardMembersTags.value = [...awardForm.members];
   awardForm.evidences = [];
   awardUploadFiles.value = [];
   openAward.value = true;
@@ -293,7 +288,7 @@ function startEditAward(award: AwardWithContest) {
     Array.isArray((award as any).members) && (award as any).members.length
       ? [...((award as any).members as string[])]
       : defaultMembers();
-  awardMembersInput.value = formatMembersInput(awardForm.members);
+  awardMembersTags.value = [...awardForm.members];
   awardForm.evidences = [...(award.evidences || [])];
   awardUploadFiles.value = [];
   openAward.value = true;
@@ -322,7 +317,7 @@ function startRecord(
       ? [...((item as any).members as string[])]
       : defaultMembers()
     : defaultMembers();
-  recordMembersInput.value = formatMembersInput(recordForm.members);
+  recordMembersTags.value = [...recordForm.members];
   recordForm.evidences = [...((item?.evidences as string[] | undefined) || [])];
   recordUploadFiles.value = [];
   openRecord.value = true;
@@ -387,7 +382,7 @@ async function saveAward(status: UserSubmitStatus) {
     return;
   }
 
-  awardForm.members = parseMembersInput(awardMembersInput.value);
+  awardForm.members = normalizeMembersList(awardMembersTags.value);
   if (!awardForm.members.length) {
     toast.add({ title: "请至少填写一个成员用户名", color: "warning" });
     return;
@@ -496,7 +491,7 @@ async function saveRecord() {
     return;
   }
 
-  recordForm.members = parseMembersInput(recordMembersInput.value);
+  recordForm.members = normalizeMembersList(recordMembersTags.value);
   if (!recordForm.members.length) {
     toast.add({ title: "请至少填写一个成员用户名", color: "warning" });
     return;
@@ -580,7 +575,7 @@ async function saveRecordDraft() {
     return;
   }
 
-  recordForm.members = parseMembersInput(recordMembersInput.value);
+  recordForm.members = normalizeMembersList(recordMembersTags.value);
   if (!recordForm.members.length) {
     toast.add({ title: "请至少填写一个成员用户名", color: "warning" });
     return;
@@ -696,7 +691,11 @@ async function saveRecordDraft() {
                       附件 {{ (award.evidences || []).length }}
                     </UBadge>
                     <UBadge color="neutral" variant="outline">
-                      成员 {{ (((award as any).members as string[] | undefined) || []).length }}
+                      成员
+                      {{
+                        (((award as any).members as string[] | undefined) || [])
+                          .length
+                      }}
                     </UBadge>
                     <UBadge
                       :color="statusColor(award.status)"
@@ -748,7 +747,11 @@ async function saveRecordDraft() {
                       附件 {{ (paper.evidences || []).length }}
                     </UBadge>
                     <UBadge color="neutral" variant="outline">
-                      成员 {{ (((paper as any).members as string[] | undefined) || []).length }}
+                      成员
+                      {{
+                        (((paper as any).members as string[] | undefined) || [])
+                          .length
+                      }}
                     </UBadge>
                     <UBadge
                       :color="statusColor(paper.status)"
@@ -800,7 +803,13 @@ async function saveRecordDraft() {
                       附件 {{ (patent.evidences || []).length }}
                     </UBadge>
                     <UBadge color="neutral" variant="outline">
-                      成员 {{ (((patent as any).members as string[] | undefined) || []).length }}
+                      成员
+                      {{
+                        (
+                          ((patent as any).members as string[] | undefined) ||
+                          []
+                        ).length
+                      }}
                     </UBadge>
                     <UBadge
                       :color="statusColor(patent.status)"
@@ -833,7 +842,9 @@ async function saveRecordDraft() {
             <UPageCard
               v-for="innovation in innovationsList"
               :key="innovation.id"
-              :class="canEditOwnedRecord(innovation.userId) ? 'cursor-pointer' : ''"
+              :class="
+                canEditOwnedRecord(innovation.userId) ? 'cursor-pointer' : ''
+              "
               :title="innovation.name"
               @click="startRecord('innovation', innovation)"
             >
@@ -854,7 +865,14 @@ async function saveRecordDraft() {
                       附件 {{ (innovation.evidences || []).length }}
                     </UBadge>
                     <UBadge color="neutral" variant="outline">
-                      成员 {{ (((innovation as any).members as string[] | undefined) || []).length }}
+                      成员
+                      {{
+                        (
+                          ((innovation as any).members as
+                            | string[]
+                            | undefined) || []
+                        ).length
+                      }}
                     </UBadge>
                     <UBadge
                       :color="statusColor(innovation.status)"
@@ -965,15 +983,11 @@ async function saveRecordDraft() {
             <UInput v-model="awardForm.date" class="w-full" type="date" />
           </UFormField>
           <UFormField
-            label="成员用户名（按顺序）"
+            label="成员排序"
             name="members"
-            description="逗号分隔，顺序用于排名系数计算"
+            description="按顺序输入成员用户名，顺序用于排名系数计算"
           >
-            <UInput
-              v-model="awardMembersInput"
-              class="w-full"
-              placeholder="例如 zhangsan, lisi, wangwu"
-            />
+            <UInputTags v-model="awardMembersTags" class="w-full" />
           </UFormField>
           <UFormField label="佐证材料" name="evidences">
             <EvidenceUpload
@@ -1031,15 +1045,11 @@ async function saveRecordDraft() {
             <UInput v-model="recordForm.date" class="w-full" type="date" />
           </UFormField>
           <UFormField
-            label="成员用户名（按顺序）"
+            label="成员排序"
             name="members"
-            description="逗号分隔，顺序用于排名系数计算"
+            description="按顺序输入成员用户名，顺序用于排名系数计算"
           >
-            <UInput
-              v-model="recordMembersInput"
-              class="w-full"
-              placeholder="例如 zhangsan, lisi, wangwu"
-            />
+            <UInputTags v-model="recordMembersTags" class="w-full" />
           </UFormField>
           <UFormField label="佐证材料" name="evidences">
             <EvidenceUpload

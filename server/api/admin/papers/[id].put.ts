@@ -7,6 +7,7 @@ const updateSchema = z.object({
   type: z.enum(paperTypeValues).optional(),
   status: z.enum(reviewStatusValues).optional(),
   date: z.coerce.date().optional(),
+  members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
 });
 

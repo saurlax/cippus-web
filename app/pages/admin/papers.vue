@@ -13,6 +13,27 @@ function formatDateText(value: unknown) {
   return value.slice(0, 10);
 }
 
+function formatMembersText(members: unknown) {
+  if (!Array.isArray(members)) {
+    return "";
+  }
+
+  return members
+    .map((item) => String(item || "").trim())
+    .filter((item) => item.length > 0)
+    .join(",");
+}
+
+function normalizeMembersList(value: string[] | undefined) {
+  return Array.from(
+    new Set(
+      (value || [])
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0),
+    ),
+  );
+}
+
 const typeItems = paperTypeValues.map((value) => ({
   value,
   label: t(`papers.type.${value}`),
@@ -27,6 +48,7 @@ const columns = [
   { accessorKey: "user.username", header: "用户" },
   { accessorKey: "name", header: "名称" },
   { accessorKey: "type", header: "类型" },
+  { accessorKey: "members", header: "成员排序" },
   { accessorKey: "date", header: "时间" },
   { accessorKey: "status", header: "状态" },
   { accessorKey: "updatedAt", header: "更新时间" },
@@ -35,6 +57,7 @@ const columns = [
 
 const openModal = ref(false);
 const currentPaper = ref<any>({});
+const membersTags = ref<string[]>([]);
 
 function openModalEditor(item?: any) {
   if (item) {
@@ -43,11 +66,14 @@ function openModalEditor(item?: any) {
       name: item.name,
       type: item.type,
       date: formatDateText(item.date),
+      members: item.members || [],
       status: item.status,
       evidences: item.evidences || [],
     };
+    membersTags.value = normalizeMembersList(item.members as string[]);
   } else {
     currentPaper.value = {};
+    membersTags.value = [];
   }
   openModal.value = true;
 }
@@ -67,6 +93,7 @@ async function editPaper() {
       name: currentPaper.value.name,
       type: currentPaper.value.type,
       date: currentPaper.value.date,
+      members: normalizeMembersList(membersTags.value),
       status: currentPaper.value.status,
     },
   });
@@ -81,6 +108,9 @@ async function editPaper() {
   <UTable :data="papers" :columns>
     <template #type-cell="{ row }">
       {{ t(`papers.type.${row.original.type}`) }}
+    </template>
+    <template #members-cell="{ row }">
+      {{ formatMembersText(row.original.members) || "-" }}
     </template>
     <template #date-cell="{ row }">
       {{ new Date(row.original.date).toLocaleString() }}
@@ -117,6 +147,13 @@ async function editPaper() {
         </UFormField>
         <UFormField label="时间" name="date" required>
           <UInput v-model="currentPaper.date" class="w-full" type="date" />
+        </UFormField>
+        <UFormField
+          label="成员排序"
+          name="members"
+          description="按顺序输入成员用户名"
+        >
+          <UInputTags v-model="membersTags" class="w-full" />
         </UFormField>
         <UFormField label="状态" name="status" required>
           <USelect

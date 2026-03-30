@@ -13,6 +13,27 @@ function formatDateText(value: unknown) {
   return value.slice(0, 10);
 }
 
+function formatMembersText(members: unknown) {
+  if (!Array.isArray(members)) {
+    return "";
+  }
+
+  return members
+    .map((item) => String(item || "").trim())
+    .filter((item) => item.length > 0)
+    .join(",");
+}
+
+function normalizeMembersList(value: string[] | undefined) {
+  return Array.from(
+    new Set(
+      (value || [])
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0),
+    ),
+  );
+}
+
 const levelItems = awardLevelValues.map((value) => ({
   value,
   label: t(`awards.level.${value}`),
@@ -32,6 +53,7 @@ const columns = [
   { accessorKey: "contest.title", header: "比赛" },
   { accessorKey: "level", header: "级别" },
   { accessorKey: "type", header: "类型" },
+  { accessorKey: "members", header: "成员排序" },
   { accessorKey: "date", header: "获奖时间" },
   { accessorKey: "status", header: "状态" },
   { accessorKey: "updatedAt", header: "更新时间" },
@@ -40,6 +62,7 @@ const columns = [
 
 const openModal = ref(false);
 const currentAward = ref<any>({});
+const membersTags = ref<string[]>([]);
 
 function openModalEditor(item?: any) {
   if (item) {
@@ -49,10 +72,13 @@ function openModalEditor(item?: any) {
       level: item.level,
       type: item.type,
       date: formatDateText(item.date),
+      members: item.members || [],
       evidences: item.evidences || [],
     };
+    membersTags.value = normalizeMembersList(item.members as string[]);
   } else {
     currentAward.value = {};
+    membersTags.value = [];
   }
   openModal.value = true;
 }
@@ -73,6 +99,7 @@ async function editAward() {
       level: currentAward.value.level,
       type: currentAward.value.type,
       date: currentAward.value.date,
+      members: normalizeMembersList(membersTags.value),
     },
   });
 
@@ -89,6 +116,9 @@ async function editAward() {
     </template>
     <template #type-cell="{ row }">
       {{ t(`awards.type.${row.original.type}`) }}
+    </template>
+    <template #members-cell="{ row }">
+      {{ formatMembersText(row.original.members) || "-" }}
     </template>
     <template #date-cell="{ row }">
       {{ new Date(row.original.date).toLocaleString() }}
@@ -129,6 +159,13 @@ async function editAward() {
         </UFormField>
         <UFormField label="获奖时间" name="date" required>
           <UInput v-model="currentAward.date" class="w-full" type="date" />
+        </UFormField>
+        <UFormField
+          label="成员排序"
+          name="members"
+          description="按顺序输入成员用户名"
+        >
+          <UInputTags v-model="membersTags" class="w-full" />
         </UFormField>
         <UFormField label="状态" name="status" required>
           <USelect
