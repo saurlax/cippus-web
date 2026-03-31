@@ -233,6 +233,15 @@ function normalizeMembersList(value: string[] | undefined) {
   );
 }
 
+function containsSelfMember(members: string[]) {
+  const currentUsername = username.value.trim().toLowerCase();
+  if (!currentUsername) {
+    return false;
+  }
+
+  return members.some((member) => member.trim().toLowerCase() === currentUsername);
+}
+
 function defaultMembers() {
   return username.value ? [username.value] : [];
 }
@@ -387,6 +396,10 @@ async function saveAward(status: UserSubmitStatus) {
     toast.add({ title: "请至少填写一个成员用户名", color: "warning" });
     return;
   }
+  if (!containsSelfMember(awardForm.members)) {
+    toast.add({ title: "成员排序必须包含自己，不能代申请", color: "warning" });
+    return;
+  }
 
   try {
     savingAward.value = true;
@@ -496,6 +509,10 @@ async function saveRecord() {
     toast.add({ title: "请至少填写一个成员用户名", color: "warning" });
     return;
   }
+  if (!containsSelfMember(recordForm.members)) {
+    toast.add({ title: "成员排序必须包含自己，不能代申请", color: "warning" });
+    return;
+  }
 
   const path = getRecordPath(currentRecordKind.value);
 
@@ -578,6 +595,10 @@ async function saveRecordDraft() {
   recordForm.members = normalizeMembersList(recordMembersTags.value);
   if (!recordForm.members.length) {
     toast.add({ title: "请至少填写一个成员用户名", color: "warning" });
+    return;
+  }
+  if (!containsSelfMember(recordForm.members)) {
+    toast.add({ title: "成员排序必须包含自己，不能代申请", color: "warning" });
     return;
   }
 
