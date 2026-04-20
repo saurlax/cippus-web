@@ -5,6 +5,7 @@ const scoringConfigValueSchema = z.union([
   z.string(),
   z.number().finite(),
   z.boolean(),
+  z.array(z.number().finite()),
 ]);
 
 const scoringConfigSchema = z.record(z.string(), scoringConfigValueSchema);
