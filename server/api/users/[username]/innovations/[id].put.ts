@@ -1,10 +1,14 @@
 import { and, eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
+import type { InnovationAchievementType } from "#shared/types/db";
+import { assertInnovationSourceAvailable } from "~~/server/utils/innovation-sources";
 
 const updateSchema = z.object({
   name: z.string().trim().min(1).optional(),
   type: z.enum(innovationTypeValues).optional(),
+  sourceType: z.enum(innovationAchievementTypeValues).optional(),
+  sourceId: z.coerce.number().int().positive().optional(),
   date: z.coerce.date().optional(),
   members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
@@ -29,6 +33,36 @@ export default defineEventHandler(async (event) => {
     columns: { id: true },
   });
   const body = updateSchema.parse(await readBody(event));
+  const current = await db.query.innovations.findFirst({
+    where: and(eq(schema.innovations.id, id), eq(schema.innovations.userId, user!.id)),
+    columns: {
+      sourceType: true,
+      sourceId: true,
+    },
+  });
+
+  if (!current) {
+    throw createError({ statusCode: 404, statusMessage: "大创记录不存在" });
+  }
+
+  const nextSourceType =
+    body.sourceType || (current.sourceType as InnovationAchievementType | null);
+  const nextSourceId = body.sourceId || current.sourceId;
+
+  if (!nextSourceType || !nextSourceId) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "大创成果必须选择关联成果",
+    });
+  }
+
+  await assertInnovationSourceAvailable({
+    username,
+    sourceType: nextSourceType,
+    sourceId: nextSourceId,
+    excludeInnovationId: id,
+  });
+
   const updateBody = {
     ...body,
     ...(body.members ? { members: normalizeMembers(body.members) } : {}),

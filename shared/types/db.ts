@@ -15,6 +15,7 @@ import {
   paperTypeEnum,
   patentTypeEnum,
   innovationTypeEnum,
+  innovationAchievementTypeEnum,
   defaultScoringConfig,
   type ScoringValue,
   type ScoringConfig,
@@ -60,6 +61,11 @@ export type PatentType = (typeof patentTypeValues)[number];
 
 export const innovationTypeValues = innovationTypeEnum.enumValues;
 export type InnovationType = (typeof innovationTypeValues)[number];
+
+export const innovationAchievementTypeValues =
+  innovationAchievementTypeEnum.enumValues;
+export type InnovationAchievementType =
+  (typeof innovationAchievementTypeValues)[number];
 
 export type { ScoringValue, ScoringConfig };
 export const activityDefaultScoringConfig = defaultScoringConfig;

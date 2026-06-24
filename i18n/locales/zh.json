@@ -42,6 +42,12 @@
       "software_copyright": "软件著作权"
     }
   },
+  "achievementTypes": {
+    "award": "奖项",
+    "paper": "论文",
+    "patent": "专利",
+    "innovation": "大创"
+  },
   "innovations": {
     "type": {
       "excellent": "优秀",

@@ -33,6 +33,7 @@ type AwardWithContest = NonNullable<typeof awards.value>[number];
 type PaperRecord = NonNullable<typeof papers.value>[number];
 type PatentRecord = NonNullable<typeof patents.value>[number];
 type InnovationRecord = NonNullable<typeof innovations.value>[number];
+type InnovationAchievementRecord = AwardWithContest | PaperRecord | PatentRecord;
 type RecordKind = "paper" | "patent" | "innovation";
 type UserSubmitStatus = "draft" | "pending";
 
@@ -73,6 +74,8 @@ const selectedRecordStatus = ref<string>();
 const recordForm = reactive({
   name: "",
   type: undefined as PaperType | PatentType | InnovationType | undefined,
+  sourceType: undefined as InnovationAchievementType | undefined,
+  sourceId: undefined as number | undefined,
   date: "",
   members: [] as string[],
   evidences: [] as string[],
@@ -111,11 +114,37 @@ const innovationTypeItems = innovationTypeValues.map((value) => ({
   value,
   label: t(`innovations.type.${value}`),
 }));
+const innovationAchievementTypeItems = innovationAchievementTypeValues.map(
+  (value) => ({
+    value,
+    label: t(`achievementTypes.${value}`),
+  }),
+);
 
 const awardsList = computed(() => awards.value || []);
 const papersList = computed(() => papers.value || []);
 const patentsList = computed(() => patents.value || []);
 const innovationsList = computed(() => innovations.value || []);
+const claimedInnovationSourceKeys = computed(() => {
+  const claimed = new Set<string>();
+
+  for (const innovation of innovationsList.value) {
+    if (
+      innovation.status === "rejected" ||
+      innovation.id === selectedRecordId.value ||
+      !(innovation as any).sourceType ||
+      !(innovation as any).sourceId
+    ) {
+      continue;
+    }
+
+    claimed.add(
+      `${String((innovation as any).sourceType)}:${Number((innovation as any).sourceId)}`,
+    );
+  }
+
+  return claimed;
+});
 
 const currentRecordTypeItems = computed(() => {
   switch (currentRecordKind.value) {
@@ -141,6 +170,35 @@ const currentRecordModalTitle = computed(
   () =>
     `${selectedRecordId.value ? "编辑" : "添加"}${currentRecordSectionTitle.value}`,
 );
+const currentInnovationSourceItems = computed(() => {
+  if (currentRecordKind.value !== "innovation" || !recordForm.sourceType) {
+    return [];
+  }
+
+  const buildItems = (kind: InnovationAchievementType, list: InnovationAchievementRecord[]) =>
+    list
+      .filter((item) => item.status !== "rejected")
+      .filter(
+        (item) =>
+          !claimedInnovationSourceKeys.value.has(`${kind}:${item.id}`) ||
+          (recordForm.sourceType === kind && recordForm.sourceId === item.id),
+      )
+      .map((item) => ({
+        value: item.id,
+        label: getInnovationAchievementText(kind, item),
+      }));
+
+  switch (recordForm.sourceType) {
+    case "award":
+      return buildItems("award", awardsList.value);
+    case "paper":
+      return buildItems("paper", papersList.value);
+    case "patent":
+      return buildItems("patent", patentsList.value);
+    default:
+      return [];
+  }
+});
 
 const genderIcon = computed(() => {
   const value = (user.value?.gender || "").toLowerCase();
@@ -223,6 +281,49 @@ function getRecordTypeLabel(kind: RecordKind, value: string) {
   }
 }
 
+function getInnovationAchievementText(
+  kind: InnovationAchievementType,
+  item: InnovationAchievementRecord,
+) {
+  if (kind === "award") {
+    return `${(item as AwardWithContest).contest?.title || "未知比赛"} / ${t(
+      `awards.level.${(item as AwardWithContest).level}`,
+    )} / ${t(`awards.type.${(item as AwardWithContest).type}`)}`;
+  }
+
+  if (kind === "paper") {
+    return `${(item as PaperRecord).name} / ${t(`papers.type.${(item as PaperRecord).type}`)}`;
+  }
+
+  return `${(item as PatentRecord).name} / ${t(`patents.type.${(item as PatentRecord).type}`)}`;
+}
+
+function getInnovationSourceText(sourceType: unknown, sourceId: unknown) {
+  const normalizedType = String(sourceType || "") as InnovationAchievementType;
+  const normalizedId = Number(sourceId || 0);
+
+  if (!normalizedType || !normalizedId) {
+    return "";
+  }
+
+  const listMap: Record<InnovationAchievementType, InnovationAchievementRecord[]> = {
+    award: awardsList.value,
+    paper: papersList.value,
+    patent: patentsList.value,
+  };
+  const target = listMap[normalizedType].find((item) => item.id === normalizedId);
+  return target ? getInnovationAchievementText(normalizedType, target) : "";
+}
+
+function isInnovationSource(sourceType: InnovationAchievementType, sourceId: number) {
+  return innovationsList.value.some(
+    (innovation) =>
+      innovation.status !== "rejected" &&
+      String((innovation as any).sourceType || "") === sourceType &&
+      Number((innovation as any).sourceId || 0) === sourceId,
+  );
+}
+
 function normalizeMembersList(value: string[] | undefined) {
   return Array.from(
     new Set(
@@ -263,7 +364,7 @@ function startEdit() {
 
   form.name = user.value.name || "";
   form.bio = user.value.bio || "";
-  form.email = "";
+  form.email = user.value.email || "";
   form.gender = user.value.gender || "male";
   form.college = user.value.college || "";
   form.password = "";
@@ -320,6 +421,8 @@ function startRecord(
     | PatentType
     | InnovationType
     | undefined;
+  recordForm.sourceType = (item as any)?.sourceType || undefined;
+  recordForm.sourceId = Number((item as any)?.sourceId || 0) || undefined;
   recordForm.date = normalizeDateText(item?.date);
   recordForm.members = item
     ? Array.isArray((item as any).members) && (item as any).members.length
@@ -503,6 +606,14 @@ async function saveRecord() {
     toast.add({ title: "请选择时间", color: "warning" });
     return;
   }
+  if (currentRecordKind.value === "innovation" && !recordForm.sourceType) {
+    toast.add({ title: "请选择成果类型", color: "warning" });
+    return;
+  }
+  if (currentRecordKind.value === "innovation" && !recordForm.sourceId) {
+    toast.add({ title: "请选择具体成果", color: "warning" });
+    return;
+  }
 
   recordForm.members = normalizeMembersList(recordMembersTags.value);
   if (!recordForm.members.length) {
@@ -529,6 +640,8 @@ async function saveRecord() {
           body: {
             name: recordForm.name,
             type: recordForm.type,
+            sourceType: recordForm.sourceType,
+            sourceId: recordForm.sourceId,
             date: recordForm.date,
             members: recordForm.members,
             evidences,
@@ -547,6 +660,8 @@ async function saveRecord() {
         body: {
           name: recordForm.name,
           type: recordForm.type,
+          sourceType: recordForm.sourceType,
+          sourceId: recordForm.sourceId,
           date: recordForm.date,
           members: recordForm.members,
           evidences,
@@ -591,6 +706,14 @@ async function saveRecordDraft() {
     toast.add({ title: "请选择时间", color: "warning" });
     return;
   }
+  if (currentRecordKind.value === "innovation" && !recordForm.sourceType) {
+    toast.add({ title: "请选择成果类型", color: "warning" });
+    return;
+  }
+  if (currentRecordKind.value === "innovation" && !recordForm.sourceId) {
+    toast.add({ title: "请选择具体成果", color: "warning" });
+    return;
+  }
 
   recordForm.members = normalizeMembersList(recordMembersTags.value);
   if (!recordForm.members.length) {
@@ -614,6 +737,8 @@ async function saveRecordDraft() {
       body: {
         name: recordForm.name,
         type: recordForm.type,
+        sourceType: recordForm.sourceType,
+        sourceId: recordForm.sourceId,
         date: recordForm.date,
         members: recordForm.members,
         evidences,
@@ -719,6 +844,13 @@ async function saveRecordDraft() {
                       }}
                     </UBadge>
                     <UBadge
+                      v-if="isInnovationSource('award', award.id)"
+                      color="info"
+                      variant="outline"
+                    >
+                      大创成果
+                    </UBadge>
+                    <UBadge
                       :color="statusColor(award.status)"
                       variant="outline"
                     >
@@ -773,6 +905,13 @@ async function saveRecordDraft() {
                         (((paper as any).members as string[] | undefined) || [])
                           .length
                       }}
+                    </UBadge>
+                    <UBadge
+                      v-if="isInnovationSource('paper', paper.id)"
+                      color="info"
+                      variant="outline"
+                    >
+                      大创成果
                     </UBadge>
                     <UBadge
                       :color="statusColor(paper.status)"
@@ -833,6 +972,13 @@ async function saveRecordDraft() {
                       }}
                     </UBadge>
                     <UBadge
+                      v-if="isInnovationSource('patent', patent.id)"
+                      color="info"
+                      variant="outline"
+                    >
+                      大创成果
+                    </UBadge>
+                    <UBadge
                       :color="statusColor(patent.status)"
                       variant="outline"
                     >
@@ -878,6 +1024,16 @@ async function saveRecordDraft() {
                     <UBadge>{{
                       t(`innovations.type.${innovation.type}`)
                     }}</UBadge>
+                    <UBadge
+                      v-if="
+                        (innovation as any).sourceType &&
+                        (innovation as any).sourceId
+                      "
+                      color="neutral"
+                      variant="outline"
+                    >
+                      {{ getInnovationSourceText((innovation as any).sourceType, (innovation as any).sourceId) }}
+                    </UBadge>
                     <UBadge
                       v-if="(innovation.evidences || []).length"
                       color="neutral"
@@ -1062,6 +1218,25 @@ async function saveRecordDraft() {
               placeholder="请选择类型"
             />
           </UFormField>
+          <template v-if="currentRecordKind === 'innovation'">
+            <UFormField label="成果类型" name="sourceType" required>
+              <USelect
+                v-model="recordForm.sourceType"
+                :items="innovationAchievementTypeItems"
+                class="w-full"
+                placeholder="请选择成果类型"
+                @update:model-value="recordForm.sourceId = undefined"
+              />
+            </UFormField>
+            <UFormField label="具体成果" name="sourceId" required>
+              <USelect
+                v-model="recordForm.sourceId"
+                :items="currentInnovationSourceItems"
+                class="w-full"
+                placeholder="请选择具体成果"
+              />
+            </UFormField>
+          </template>
           <UFormField label="时间" name="date" required>
             <UInput v-model="recordForm.date" class="w-full" type="date" />
           </UFormField>

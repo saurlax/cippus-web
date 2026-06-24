@@ -50,6 +50,7 @@ const columns = [
   { accessorKey: "user.username", header: "用户" },
   { accessorKey: "name", header: "名称" },
   { accessorKey: "type", header: "类型" },
+  { accessorKey: "sourceSummary", header: "关联成果" },
   { accessorKey: "members", header: "成员排序" },
   { accessorKey: "date", header: "时间" },
   { accessorKey: "status", header: "状态" },
@@ -67,6 +68,9 @@ function openModalEditor(item?: any) {
       id: item.id,
       name: item.name,
       type: item.type,
+      sourceType: item.sourceType,
+      sourceId: item.sourceId,
+      sourceSummary: item.sourceSummary || "",
       date: formatDateText(item.date),
       members: item.members || [],
       status: item.status,
@@ -149,6 +153,13 @@ async function editInnovation() {
         </UFormField>
         <UFormField label="时间" name="date" required>
           <UInput v-model="currentInnovation.date" class="w-full" type="date" />
+        </UFormField>
+        <UFormField label="关联成果" name="sourceSummary">
+          <UInput
+            :model-value="currentInnovation.sourceSummary || '未设置'"
+            class="w-full"
+            readonly
+          />
         </UFormField>
         <UFormField
           label="成员排序"

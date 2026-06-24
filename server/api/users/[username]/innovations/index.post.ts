@@ -1,10 +1,13 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
+import { assertInnovationSourceAvailable } from "~~/server/utils/innovation-sources";
 
 const createSchema = z.object({
   name: z.string().trim().min(1),
   type: z.enum(innovationTypeValues),
+  sourceType: z.enum(innovationAchievementTypeValues),
+  sourceId: z.coerce.number().int().positive(),
   date: z.coerce.date(),
   members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
@@ -29,6 +32,11 @@ export default defineEventHandler(async (event) => {
     columns: { id: true },
   });
   const body = createSchema.parse(await readBody(event));
+  await assertInnovationSourceAvailable({
+    username,
+    sourceType: body.sourceType,
+    sourceId: body.sourceId,
+  });
   const members = normalizeMembers(body.members, username);
   const [record] = await db
     .insert(schema.innovations)

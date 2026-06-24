@@ -57,6 +57,11 @@ export const innovationTypeEnum = pgEnum("innovation_type", [
   "qualified",
 ]);
 
+export const innovationAchievementTypeEnum = pgEnum(
+  "innovation_achievement_type",
+  ["award", "paper", "patent"],
+);
+
 export const achievementTypeEnum = pgEnum("achievement_type", [
   "award",
   "paper",
@@ -253,9 +258,11 @@ export const innovations = pgTable("innovations", {
     .references(() => users.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
-    }),
+  }),
   name: text("name").notNull(),
   type: innovationTypeEnum("type").notNull(),
+  sourceType: innovationAchievementTypeEnum("source_type"),
+  sourceId: integer("source_id"),
   members: text("members").array().notNull().default([]),
   evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),

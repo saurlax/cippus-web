@@ -1,6 +1,7 @@
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import { activityDefaultScoringConfig } from "#shared/types/db";
+import { innovationSourceKey } from "~~/server/utils/innovation-sources";
 
 type ScoringValue = string | number | boolean | number[];
 type ScoringConfig = Record<string, ScoringValue>;
@@ -472,7 +473,19 @@ export async function listEligibleAchievements(activityId: number, username: str
   const startDate = activity.startDate;
   const endDate = activity.endDate;
 
-  const [awards, papers, patents, innovations] = await Promise.all([
+  const [claimedSources, awards, papers, patents, innovations] = await Promise.all([
+    db.query.innovations.findMany({
+      where: and(
+        sql`"innovations"."members" @> ARRAY[${username}]::text[]`,
+        sql`"innovations"."source_type" IS NOT NULL`,
+        sql`"innovations"."source_id" IS NOT NULL`,
+        sql`"innovations"."status" <> 'rejected'`,
+      ),
+      columns: {
+        sourceType: true,
+        sourceId: true,
+      },
+    }),
     db.query.awards.findMany({
       where: and(
         sql`"awards"."members" @> ARRAY[${username}]::text[]`,
@@ -514,11 +527,23 @@ export async function listEligibleAchievements(activityId: number, username: str
     }),
   ]);
 
+  const claimedSourceKeys = new Set(
+    claimedSources.map((item) =>
+      innovationSourceKey(String(item.sourceType || ""), Number(item.sourceId || 0)),
+    ),
+  );
+
   return {
     activity,
-    awards,
-    papers,
-    patents,
+    awards: awards.filter(
+      (item) => !claimedSourceKeys.has(innovationSourceKey("award", item.id)),
+    ),
+    papers: papers.filter(
+      (item) => !claimedSourceKeys.has(innovationSourceKey("paper", item.id)),
+    ),
+    patents: patents.filter(
+      (item) => !claimedSourceKeys.has(innovationSourceKey("patent", item.id)),
+    ),
     innovations,
   };
 }
