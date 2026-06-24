@@ -7,6 +7,7 @@ const providers = ref([
     label: "通过统一身份认证登录",
     icon: "i-lucide-log-in",
     to: "/api/cas",
+    external: true,
   },
 ]);
 
