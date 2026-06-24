@@ -3,6 +3,13 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
   runtimeConfig: {
+    mailHost: "",
+    mailPort: 587,
+    mailSecure: false,
+    mailUser: "",
+    mailPass: "",
+    mailFrom: "",
+    mailFromName: "Cippus",
     public: {
       casBaseUrl: "https://sso.dlut.edu.cn/cas",
       casServiceUrl:

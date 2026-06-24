@@ -1,4 +1,5 @@
 import { db, schema } from "@nuxthub/db";
+import { sendNoticePublishedEmail } from "~~/server/utils/review-email";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -11,6 +12,22 @@ export default defineEventHandler(async (event) => {
       category: body.category,
     })
     .returning();
+
+  if (!notice) {
+    throw createError({ statusCode: 500, statusMessage: "通知创建失败" });
+  }
+
+  const users = await db.query.users.findMany({
+    columns: {
+      email: true,
+    },
+  });
+
+  await sendNoticePublishedEmail({
+    title: notice.title,
+    category: notice.category,
+    recipientEmails: users.map((item) => item.email || ""),
+  });
 
   return notice;
 });

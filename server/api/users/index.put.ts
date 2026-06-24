@@ -52,6 +52,7 @@ export default defineEventHandler(async (event) => {
       username: true,
       name: true,
       bio: true,
+      email: true,
       gender: true,
       college: true,
       admin: true,
@@ -75,6 +76,7 @@ export default defineEventHandler(async (event) => {
     username: updatedUser.username,
     name: updatedUser.name,
     bio: updatedUser.bio,
+    email: updatedUser.email,
     gender: updatedUser.gender,
     college: updatedUser.college,
   };

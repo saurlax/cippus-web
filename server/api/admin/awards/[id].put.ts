@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
+import { sendAchievementReviewEmail } from "~~/server/utils/review-email";
 
 const updateSchema = z.object({
   status: z.enum(reviewStatusValues).optional(),
@@ -14,10 +15,42 @@ const updateSchema = z.object({
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, "id"));
   const body = updateSchema.parse(await readBody(event));
+  const current = await db.query.awards.findFirst({
+    where: eq(schema.awards.id, id),
+    with: {
+      contest: true,
+      user: {
+        columns: {
+          username: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!current) {
+    throw createError({ statusCode: 404, statusMessage: "奖项记录不存在" });
+  }
+
   const [updated] = await db
     .update(schema.awards)
     .set(body)
     .where(eq(schema.awards.id, id))
     .returning();
+
+  if (
+    body.status &&
+    body.status !== current.status &&
+    (body.status === "approved" || body.status === "rejected")
+  ) {
+    await sendAchievementReviewEmail({
+      email: current.user.email,
+      username: current.user.username,
+      recordTypeLabel: "奖项",
+      recordName: current.contest?.title || `奖项 #${current.id}`,
+      status: body.status,
+    });
+  }
+
   return updated;
 });

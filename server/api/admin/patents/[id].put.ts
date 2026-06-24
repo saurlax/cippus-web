@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
+import { sendAchievementReviewEmail } from "~~/server/utils/review-email";
 
 const updateSchema = z.object({
   name: z.string().trim().min(1).optional(),
@@ -14,10 +15,45 @@ const updateSchema = z.object({
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, "id"));
   const body = updateSchema.parse(await readBody(event));
+  const current = await db.query.patents.findFirst({
+    where: eq(schema.patents.id, id),
+    with: {
+      user: {
+        columns: {
+          username: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!current) {
+    throw createError({ statusCode: 404, statusMessage: "专利记录不存在" });
+  }
+
   const [updated] = await db
     .update(schema.patents)
     .set(body)
     .where(eq(schema.patents.id, id))
     .returning();
+
+  if (!updated) {
+    throw createError({ statusCode: 404, statusMessage: "专利记录不存在" });
+  }
+
+  if (
+    body.status &&
+    body.status !== current.status &&
+    (body.status === "approved" || body.status === "rejected")
+  ) {
+    await sendAchievementReviewEmail({
+      email: current.user.email,
+      username: current.user.username,
+      recordTypeLabel: "专利",
+      recordName: updated.name,
+      status: body.status,
+    });
+  }
+
   return updated;
 });
