@@ -31,11 +31,9 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
-    public: {
-      casBaseUrl: "https://sso.dlut.edu.cn/cas",
-      casServiceUrl:
-        "https%3A%2F%2Fwebvpn.dlut.edu.cn%2Fhttp-3000%2F57787a7876706e323032336b6579402474170119f00b9c5dbe%2Fapi%2Fcas",
-    },
+    casBaseUrl: "https://sso.dlut.edu.cn/cas",
+    casServiceUrl:
+      "https://webvpn.dlut.edu.cn/http-3000/57787a7876706e323032336b6579402474170119f00b9c5dbe/api/cas",
   },
   i18n: {
     defaultLocale: "zh",

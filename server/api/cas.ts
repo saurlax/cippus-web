@@ -2,10 +2,19 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 
 export default defineEventHandler(async (event) => {
-  const { public: config } = useRuntimeConfig();
+  const config = useRuntimeConfig(event);
   const { ticket } = getQuery(event);
+  const serviceUrl = encodeURIComponent(String(config.casServiceUrl || "").trim());
+
+  if (!ticket) {
+    return sendRedirect(
+      event,
+      `${config.casBaseUrl}/login?service=${serviceUrl}`
+    );
+  }
+
   const rawXml = await $fetch<string>(
-    `${config.casBaseUrl}/serviceValidate?service=${config.casServiceUrl}&ticket=${ticket}`
+    `${config.casBaseUrl}/serviceValidate?service=${serviceUrl}&ticket=${ticket}`
   );
   const username = rawXml.match(/<cas:ID_NUMBER>(\d+)<\/cas:ID_NUMBER>/)?.[1];
   const name = rawXml.match(/<cas:USER_NAME>([^<]+)<\/cas:USER_NAME>/)?.[1];
@@ -27,5 +36,5 @@ export default defineEventHandler(async (event) => {
     return sendRedirect(event, "/");
   }
 
-  sendRedirect(event, "/login");
+  return sendRedirect(event, "/login");
 });
