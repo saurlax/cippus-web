@@ -73,25 +73,33 @@ async function updateUser() {
 </script>
 
 <template>
-  <UDashboardNavbar title="用户管理">
-    <template #right>
-      <UButton @click="createUser">新建用户</UButton>
+  <UDashboardPanel>
+    <template #header>
+      <UDashboardNavbar title="用户管理">
+        <template #right>
+          <UButton @click="createUser">新建用户</UButton>
+        </template>
+      </UDashboardNavbar>
     </template>
-  </UDashboardNavbar>
-  <UTable :data="users" :columns>
-    <template #admin-cell="{ row }">
-      {{ row.original.admin ? "是" : "否" }}
+
+    <template #body>
+      <UTable :data="users" :columns>
+        <template #admin-cell="{ row }">
+          {{ row.original.admin ? "是" : "否" }}
+        </template>
+        <template #actions-cell="{ row }">
+          <UButton
+            icon="i-lucide-edit"
+            size="sm"
+            color="neutral"
+            variant="ghost"
+            @click="openModalEditor(row.original)"
+          />
+        </template>
+      </UTable>
     </template>
-    <template #actions-cell="{ row }">
-      <UButton
-        icon="i-lucide-edit"
-          size="sm"
-        color="neutral"
-        variant="ghost"
-        @click="openModalEditor(row.original)"
-      />
-    </template>
-  </UTable>
+  </UDashboardPanel>
+
   <UModal v-model:open="openModal" title="编辑用户">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit="updateUser">

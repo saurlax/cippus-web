@@ -2,18 +2,40 @@
 const UButton = resolveComponent("UButton");
 
 const { t } = useI18n();
-const activeStatus = ref("pending");
-const statusTabItems = computed(() =>
-  ["pending", "approved", "rejected", "draft"].map((value) => ({
-    label: t(`awards.status.${value}`),
+const searchText = ref("");
+const statusFilter = ref("all");
+const page = ref(1);
+const pageSize = 10;
+const statusFilterItems = computed(() => [
+  { label: "全部状态", value: "all" },
+  ...["pending", "approved", "rejected", "draft"].map((value) => ({
+    label: t(`status.${value}`),
     value,
   })),
-);
+]);
 
-const { data: awards, refresh } = await useFetch<any[]>("/api/admin/awards");
-const filteredAwards = computed(() =>
-  (awards.value || []).filter((item) => item.status === activeStatus.value),
-);
+const { data: awards, refresh } = await useFetch<any>("/api/admin/awards", {
+  query: {
+    page,
+    pageSize,
+    search: searchText,
+    status: statusFilter,
+  },
+});
+const awardsList = computed(() => awards.value?.items || []);
+const awardsTotal = computed(() => awards.value?.total || 0);
+
+watch([searchText, statusFilter], () => {
+  page.value = 1;
+});
+
+watch(awardsTotal, (total) => {
+  const maxPage = Math.max(1, Math.ceil(total / pageSize));
+
+  if (page.value > maxPage) {
+    page.value = maxPage;
+  }
+});
 
 function formatDateText(value: unknown) {
   if (!value || typeof value !== "string") {
@@ -21,6 +43,14 @@ function formatDateText(value: unknown) {
   }
 
   return value.slice(0, 10);
+}
+
+function formatDateTimeText(value: unknown) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Date(String(value)).toLocaleString();
 }
 
 function formatMembersText(members: unknown) {
@@ -54,7 +84,7 @@ const typeItems = awardTypeValues.map((value) => ({
 }));
 const statusItems = reviewStatusValues.map((value) => ({
   value,
-  label: t(`awards.status.${value}`),
+  label: t(`status.${value}`),
 }));
 
 const columns = [
@@ -121,39 +151,69 @@ async function editAward() {
 </script>
 
 <template>
-  <UDashboardNavbar title="奖项管理"></UDashboardNavbar>
-  <div class="space-y-3">
-    <UTabs v-model="activeStatus" :items="statusTabItems" variant="pill" />
-    <UTable :data="filteredAwards" :columns>
-    <template #level-cell="{ row }">
-      {{ t(`awards.level.${row.original.level}`) }}
+  <UDashboardPanel>
+    <template #header>
+      <UDashboardNavbar title="奖项管理" />
     </template>
-    <template #type-cell="{ row }">
-      {{ t(`awards.type.${row.original.type}`) }}
+
+    <template #body>
+      <div class="space-y-3">
+        <div class="grid gap-3 sm:grid-cols-[minmax(0,20rem)_10rem]">
+          <UFormField label="搜索" name="search">
+            <UInput
+              v-model="searchText"
+              class="w-full"
+              icon="i-lucide-search"
+              placeholder="搜索奖项"
+            />
+          </UFormField>
+          <UFormField label="状态" name="status">
+            <USelect v-model="statusFilter" :items="statusFilterItems" class="w-full" />
+          </UFormField>
+        </div>
+        <UTable :data="awardsList" :columns>
+        <template #level-cell="{ row }">
+          {{ t(`awards.level.${row.original.level}`) }}
+        </template>
+        <template #type-cell="{ row }">
+          {{ t(`awards.type.${row.original.type}`) }}
+        </template>
+        <template #members-cell="{ row }">
+          {{ formatMembersText(row.original.members) || "-" }}
+        </template>
+        <template #date-cell="{ row }">
+          {{ formatDateTimeText(row.original.date) }}
+        </template>
+        <template #status-cell="{ row }">
+          {{ t(`status.${row.original.status}`) }}
+        </template>
+        <template #updatedAt-cell="{ row }">
+          {{ formatDateTimeText(row.original.updatedAt) }}
+        </template>
+        <template #actions-cell="{ row }">
+          <UButton
+            color="neutral"
+            icon="i-lucide-edit"
+            variant="ghost"
+            size="sm"
+            @click="openModalEditor(row.original)"
+          />
+        </template>
+        </UTable>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-sm text-muted">
+            共 {{ awardsTotal }} 条
+          </p>
+          <UPagination
+            v-model:page="page"
+            :items-per-page="pageSize"
+            :total="awardsTotal"
+            show-edges
+          />
+        </div>
+      </div>
     </template>
-    <template #members-cell="{ row }">
-      {{ formatMembersText(row.original.members) || "-" }}
-    </template>
-    <template #date-cell="{ row }">
-      {{ new Date(row.original.date).toLocaleString() }}
-    </template>
-    <template #status-cell="{ row }">
-      {{ t(`awards.status.${row.original.status}`) }}
-    </template>
-    <template #updatedAt-cell="{ row }">
-      {{ new Date(row.original.updatedAt).toLocaleString() }}
-    </template>
-    <template #actions-cell="{ row }">
-      <UButton
-        color="neutral"
-        icon="i-lucide-edit"
-        variant="ghost"
-        size="sm"
-        @click="openModalEditor(row.original)"
-      />
-    </template>
-    </UTable>
-  </div>
+  </UDashboardPanel>
 
   <UModal v-model:open="openModal" title="编辑奖项">
     <template #body>
@@ -207,3 +267,4 @@ async function editAward() {
     </template>
   </UModal>
 </template>
+

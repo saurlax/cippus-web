@@ -1,13 +1,22 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  const query = adminReviewListQuerySchema.parse(getQuery(event));
+  const where =
+    query.status === "all"
+      ? undefined
+      : eq(schema.innovations.status, query.status);
+
   const innovations = await db.query.innovations.findMany({
     with: { user: true },
     orderBy: schema.innovations.updatedAt,
+    where,
+    limit: query.search ? undefined : query.pageSize,
+    offset: query.search ? undefined : (query.page - 1) * query.pageSize,
   });
 
-  return await Promise.all(
+  const items = await Promise.all(
     innovations.map(async (innovation) => {
       if (!innovation.sourceType || !innovation.sourceId) {
         return {
@@ -51,4 +60,32 @@ export default defineEventHandler(async () => {
       };
     }),
   );
+
+  if (!query.search) {
+    return {
+      items,
+      total: await db.$count(schema.innovations, where),
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
+  const filteredInnovations = items.filter((item) =>
+    adminMatchesKeyword(
+      [
+        item.id,
+        item.user?.username,
+        item.name,
+        item.type,
+        adminInnovationTypeLabels[item.type],
+        item.sourceSummary,
+        adminFormatMembersText(item.members),
+        item.status,
+        adminReviewStatusLabels[item.status],
+      ],
+      query.search,
+    ),
+  );
+
+  return adminPaginateItems(filteredInnovations, query.page, query.pageSize);
 });

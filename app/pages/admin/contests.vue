@@ -71,36 +71,44 @@ async function deleteContest(id: number) {
 </script>
 
 <template>
-  <UDashboardNavbar title="竞赛管理">
-    <template #right>
-      <UButton @click="createContest">新建竞赛</UButton>
+  <UDashboardPanel>
+    <template #header>
+      <UDashboardNavbar title="竞赛管理">
+        <template #right>
+          <UButton @click="createContest">新建竞赛</UButton>
+        </template>
+      </UDashboardNavbar>
     </template>
-  </UDashboardNavbar>
-  <UTable :data="contests" :columns>
-    <template #createdAt-cell="{ row }">
-      {{ new Date(row.original.createdAt).toLocaleString() }}
+
+    <template #body>
+      <UTable :data="contests" :columns>
+        <template #createdAt-cell="{ row }">
+          {{ new Date(row.original.createdAt).toLocaleString() }}
+        </template>
+        <template #updatedAt-cell="{ row }">
+          {{ new Date(row.original.updatedAt).toLocaleString() }}
+        </template>
+        <template #actions-cell="{ row }">
+          <UButton
+            icon="i-lucide-edit"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            @click="openModalEditor(row.original)"
+          />
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="sm"
+            :loading="deletingContestId === row.original.id"
+            @click="deleteContest(row.original.id)"
+          />
+        </template>
+      </UTable>
     </template>
-    <template #updatedAt-cell="{ row }">
-      {{ new Date(row.original.updatedAt).toLocaleString() }}
-    </template>
-    <template #actions-cell="{ row }">
-      <UButton
-        icon="i-lucide-edit"
-        color="neutral"
-        variant="ghost"
-        size="sm"
-        @click="openModalEditor(row.original)"
-      />
-      <UButton
-        icon="i-lucide-trash-2"
-        color="error"
-        variant="ghost"
-        size="sm"
-        :loading="deletingContestId === row.original.id"
-        @click="deleteContest(row.original.id)"
-      />
-    </template>
-  </UTable>
+  </UDashboardPanel>
+
   <UModal v-model:open="openModal" title="编辑竞赛">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit="updateContest">

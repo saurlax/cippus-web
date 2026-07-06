@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 const route = useRoute();
 const { user: sessionUser } = useUserSession();
 const toast = useToast();
@@ -923,7 +923,7 @@ async function saveRecordDraft() {
                       :color="statusColor(award.status)"
                       variant="outline"
                     >
-                      {{ t(`awards.status.${award.status}`) }}
+                      {{ t(`status.${award.status}`) }}
                     </UBadge>
                   </div>
                 </div>
@@ -976,7 +976,7 @@ async function saveRecordDraft() {
                       :color="statusColor(paper.status)"
                       variant="outline"
                     >
-                      {{ t(`awards.status.${paper.status}`) }}
+                      {{ t(`status.${paper.status}`) }}
                     </UBadge>
                   </div>
                 </div>
@@ -1031,7 +1031,7 @@ async function saveRecordDraft() {
                       :color="statusColor(patent.status)"
                       variant="outline"
                     >
-                      {{ t(`awards.status.${patent.status}`) }}
+                      {{ t(`status.${patent.status}`) }}
                     </UBadge>
                   </div>
                 </div>
@@ -1092,7 +1092,7 @@ async function saveRecordDraft() {
                       :color="statusColor(innovation.status)"
                       variant="outline"
                     >
-                      {{ t(`awards.status.${innovation.status}`) }}
+                      {{ t(`status.${innovation.status}`) }}
                     </UBadge>
                   </div>
                 </div>
@@ -1390,3 +1390,4 @@ async function saveRecordDraft() {
     </UModal>
   </UContainer>
 </template>
+

@@ -1,11 +1,11 @@
 {
+  "status": {
+    "draft": "草稿",
+    "pending": "待审核",
+    "approved": "通过",
+    "rejected": "拒绝"
+  },
   "awards": {
-    "status": {
-      "draft": "草稿",
-      "pending": "待审核",
-      "approved": "通过",
-      "rejected": "拒绝"
-    },
     "level": {
       "national": "国家级",
       "provincial": "省级",

@@ -559,41 +559,49 @@ watch(
 </script>
 
 <template>
-  <UDashboardNavbar title="申报管理">
-    <template #right>
-      <UButton @click="createActivity">新建活动</UButton>
+  <UDashboardPanel>
+    <template #header>
+      <UDashboardNavbar title="申报管理">
+        <template #right>
+          <UButton @click="createActivity">新建活动</UButton>
+        </template>
+      </UDashboardNavbar>
     </template>
-  </UDashboardNavbar>
-  <UTable :data="activities" :columns>
-    <template #name-cell="{ row }">
-      <ULink :to="`/admin/activities/${row.original.id}`" class="text-primary hover:underline">
-        {{ row.original.name }}
-      </ULink>
+
+    <template #body>
+      <UTable :data="activities" :columns>
+        <template #name-cell="{ row }">
+          <ULink :to="`/admin/activities/${row.original.id}`" class="text-primary hover:underline">
+            {{ row.original.name }}
+          </ULink>
+        </template>
+        <template #startDate-cell="{ row }">
+          {{ new Date(row.original.startDate).toLocaleString() }}
+        </template>
+        <template #endDate-cell="{ row }">
+          {{ new Date(row.original.endDate).toLocaleString() }}
+        </template>
+        <template #actions-cell="{ row }">
+          <UButton
+            icon="i-lucide-edit"
+            size="sm"
+            color="neutral"
+            variant="ghost"
+            @click="openModalEditor(row.original)"
+          />
+          <UButton
+            icon="i-lucide-trash-2"
+            size="sm"
+            color="error"
+            variant="ghost"
+            :loading="deletingActivityId === row.original.id"
+            @click="deleteActivity(row.original.id)"
+          />
+        </template>
+      </UTable>
     </template>
-    <template #startDate-cell="{ row }">
-      {{ new Date(row.original.startDate).toLocaleString() }}
-    </template>
-    <template #endDate-cell="{ row }">
-      {{ new Date(row.original.endDate).toLocaleString() }}
-    </template>
-    <template #actions-cell="{ row }">
-      <UButton
-        icon="i-lucide-edit"
-        size="sm"
-        color="neutral"
-        variant="ghost"
-        @click="openModalEditor(row.original)"
-      />
-      <UButton
-        icon="i-lucide-trash-2"
-        size="sm"
-        color="error"
-        variant="ghost"
-        :loading="deletingActivityId === row.original.id"
-        @click="deleteActivity(row.original.id)"
-      />
-    </template>
-  </UTable>
+  </UDashboardPanel>
+
   <UModal v-model:open="openModal" title="编辑活动">
     <template #body>
       <UForm class="flex flex-col gap-2" @submit="updateActivity">

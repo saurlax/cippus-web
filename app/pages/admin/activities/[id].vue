@@ -268,87 +268,93 @@ async function deleteItem(parentApplicationId: number, itemId: number) {
 </script>
 
 <template>
-  <UDashboardNavbar :title="`申报 - ${activity?.name || ''}`">
-    <template #leading>
-      <UButton
-        to="/admin/activities"
-        color="neutral"
-        variant="ghost"
-        icon="i-lucide-arrow-left"
+  <UDashboardPanel>
+    <template #header>
+      <UDashboardNavbar :title="`申报 - ${activity?.name || ''}`">
+        <template #leading>
+          <UButton
+            to="/admin/activities"
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-arrow-left"
+          >
+            返回
+          </UButton>
+        </template>
+        <template #right>
+          <UButton
+            icon="i-lucide-refresh-ccw"
+            :loading="refreshingAll"
+            @click="refreshAllScores"
+          >
+            重算积分
+          </UButton>
+        </template>
+      </UDashboardNavbar>
+    </template>
+
+    <template #body>
+      <UTable
+        v-model:expanded="expanded"
+        :data="tableData"
+        :columns="columns"
+        :loading="loading"
+        :get-row-id="(row: TableRow) => `${row.rowType}-${row.id}`"
+        :get-sub-rows="(row: TableRow) => row.children"
+        :ui="{
+          base: 'border-separate border-spacing-0',
+          tbody: '[&>tr]:last:[&>td]:border-b-0',
+          tr: 'group',
+          td: 'empty:p-0 group-has-[td:not(:empty)]:border-b border-default',
+        }"
       >
-        返回
-      </UButton>
-    </template>
-    <template #right>
-      <UButton
-        icon="i-lucide-refresh-ccw"
-        :loading="refreshingAll"
-        @click="refreshAllScores"
-      >
-        重算积分
-      </UButton>
-    </template>
-  </UDashboardNavbar>
+        <template #rank-cell="{ row }">
+          <span v-if="row.original.rowType === 'application'">
+            {{ row.original.rank }}
+          </span>
+          <span v-else>-</span>
+        </template>
 
-  <UTable
-    v-model:expanded="expanded"
-    :data="tableData"
-    :columns="columns"
-    :loading="loading"
-    :get-row-id="(row: TableRow) => `${row.rowType}-${row.id}`"
-    :get-sub-rows="(row: TableRow) => row.children"
-    :ui="{
-      base: 'border-separate border-spacing-0',
-      tbody: '[&>tr]:last:[&>td]:border-b-0',
-      tr: 'group',
-      td: 'empty:p-0 group-has-[td:not(:empty)]:border-b border-default',
-    }"
-  >
-    <template #rank-cell="{ row }">
-      <span v-if="row.original.rowType === 'application'">
-        {{ row.original.rank }}
-      </span>
-      <span v-else>-</span>
-    </template>
+        <template #itemCount-cell="{ row }">
+          <span class="truncate" :title="String(row.original.itemCount)">
+            {{ row.original.itemCount }}
+          </span>
+        </template>
 
-    <template #itemCount-cell="{ row }">
-      <span class="truncate" :title="String(row.original.itemCount)">
-        {{ row.original.itemCount }}
-      </span>
-    </template>
+        <template #effectiveTotalScore-cell="{ row }">
+          <UInput
+            v-if="row.original.rowType === 'application'"
+            :model-value="row.original.effectiveTotalScore"
+            type="number"
+            size="sm"
+            class="w-28"
+            :loading="updatingEffectiveApplicationId === row.original.id"
+            @change="updateEffectiveTotalScore(row.original.id, Number(($event.target as HTMLInputElement).value))"
+          />
+          <span v-else>-</span>
+        </template>
 
-    <template #effectiveTotalScore-cell="{ row }">
-      <UInput
-        v-if="row.original.rowType === 'application'"
-        :model-value="row.original.effectiveTotalScore"
-        type="number"
-        size="sm"
-        class="w-28"
-        :loading="updatingEffectiveApplicationId === row.original.id"
-        @change="updateEffectiveTotalScore(row.original.id, Number(($event.target as HTMLInputElement).value))"
-      />
-      <span v-else>-</span>
+        <template #actions-cell="{ row }">
+          <UButton
+            v-if="row.original.rowType === 'application'"
+            icon="i-lucide-refresh-ccw"
+            size="sm"
+            color="neutral"
+            variant="ghost"
+            :loading="refreshingApplicationId === row.original.id"
+            @click="refreshSingleApplication(row.original.id)"
+          />
+          <UButton
+            v-if="row.original.rowType === 'item'"
+            icon="i-lucide-trash-2"
+            size="xs"
+            color="error"
+            variant="ghost"
+            :loading="deletingItemId === row.original.id"
+            @click="deleteItem(row.original.parentApplicationId, row.original.id)"
+          />
+        </template>
+      </UTable>
     </template>
-
-    <template #actions-cell="{ row }">
-      <UButton
-        v-if="row.original.rowType === 'application'"
-        icon="i-lucide-refresh-ccw"
-        size="sm"
-        color="neutral"
-        variant="ghost"
-        :loading="refreshingApplicationId === row.original.id"
-        @click="refreshSingleApplication(row.original.id)"
-      />
-      <UButton
-        v-if="row.original.rowType === 'item'"
-        icon="i-lucide-trash-2"
-        size="xs"
-        color="error"
-        variant="ghost"
-        :loading="deletingItemId === row.original.id"
-        @click="deleteItem(row.original.parentApplicationId, row.original.id)"
-      />
-    </template>
-  </UTable>
+  </UDashboardPanel>
 </template>

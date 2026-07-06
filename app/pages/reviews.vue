@@ -66,7 +66,7 @@ const kindFilterItems = [{ label: "全部类型", value: "all" }, ...kindItems];
 const statusFilterItems = computed(() => [
   { label: "全部状态", value: "all" },
   ...["pending", "approved", "rejected", "draft"].map((value) => ({
-    label: t(`awards.status.${value}`),
+    label: t(`status.${value}`),
     value,
   })),
 ]);
@@ -218,7 +218,7 @@ function toTableRecords(kind: AchievementKind, records: EditableRecord[]): Table
     titleText: getRecordTitle(kind, item),
     typeText: getTypeText(kind, item),
     dateText: normalizeDateText(item.date),
-    statusText: t(`awards.status.${item.status}`),
+    statusText: t(`status.${item.status}`),
   }));
 }
 

@@ -77,8 +77,6 @@ const items: NavigationMenuItem[] = [
       <Logo />
       <UNavigationMenu :items="items" orientation="vertical" />
     </UDashboardSidebar>
-    <UDashboardPanel>
-      <slot />
-    </UDashboardPanel>
+    <slot />
   </UDashboardGroup>
 </template>
