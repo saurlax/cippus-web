@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "display_achievements" jsonb DEFAULT '{}'::jsonb NOT NULL;

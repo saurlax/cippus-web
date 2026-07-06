@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
       email: true,
       gender: true,
       college: true,
+      displayAchievements: true,
     },
   });
 });

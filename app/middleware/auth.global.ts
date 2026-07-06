@@ -1,5 +1,5 @@
 export default defineNuxtRouteMiddleware((to) => {
-  const publicPaths = ["/", "/login", "/notices", "/contests"];
+  const publicPaths = ["/", "/login", "/notices", "/contests", "/search", "/users"];
   const isPublicPath = publicPaths.some(
     (path) => to.path === path || to.path.startsWith(`${path}/`),
   );

@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
 
   const user = await db.query.users.findFirst({
     where: eq(schema.users.username, username),
-    columns: { id: true, username: true },
+    columns: { id: true, username: true, displayAchievements: true },
   });
 
   if (!user) {
@@ -43,6 +43,11 @@ export default defineEventHandler(async (event) => {
 
   const session = await getUserSession(event);
   const canViewAll = session.user?.username === username;
+  const displayIds = (user.displayAchievements?.award || []).filter(Number.isInteger);
+
+  if (!canViewAll && !displayIds.length) {
+    return [];
+  }
 
   const awards = await db.query.awards.findMany({
     where: canViewAll
@@ -50,6 +55,7 @@ export default defineEventHandler(async (event) => {
       : and(
           sql`"awards"."members" @> ARRAY[${username}]::text[]`,
           eq(schema.awards.status, "approved"),
+          inArray(schema.awards.id, displayIds),
         ),
     orderBy: schema.awards.updatedAt,
     with: {

@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
   const session = await getUserSession(event);
   const user = await db.query.users.findFirst({
     where: eq(schema.users.username, username),
-    columns: { id: true, username: true },
+    columns: { id: true, username: true, displayAchievements: true },
   });
 
   if (!user) {
@@ -39,6 +39,11 @@ export default defineEventHandler(async (event) => {
   }
 
   const canViewAll = session.user?.username === username;
+  const displayIds = (user.displayAchievements?.patent || []).filter(Number.isInteger);
+
+  if (!canViewAll && !displayIds.length) {
+    return [];
+  }
 
   const patents = await db.query.patents.findMany({
     where: canViewAll
@@ -46,6 +51,7 @@ export default defineEventHandler(async (event) => {
       : and(
           sql`"patents"."members" @> ARRAY[${username}]::text[]`,
           eq(schema.patents.status, "approved"),
+          inArray(schema.patents.id, displayIds),
         ),
     orderBy: schema.patents.updatedAt,
   });

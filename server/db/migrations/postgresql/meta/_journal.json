@@ -57,6 +57,13 @@
       "when": 1783298597153,
       "tag": "0007_complex_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1783302179536,
+      "tag": "0008_clever_hydra",
+      "breakpoints": true
     }
   ]
 }
