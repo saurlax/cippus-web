@@ -2,8 +2,18 @@
 const UButton = resolveComponent("UButton");
 
 const { t } = useI18n();
+const activeStatus = ref("pending");
+const statusTabItems = computed(() =>
+  ["pending", "approved", "rejected", "draft"].map((value) => ({
+    label: t(`awards.status.${value}`),
+    value,
+  })),
+);
 
 const { data: awards, refresh } = await useFetch<any[]>("/api/admin/awards");
+const filteredAwards = computed(() =>
+  (awards.value || []).filter((item) => item.status === activeStatus.value),
+);
 
 function formatDateText(value: unknown) {
   if (!value || typeof value !== "string") {
@@ -112,7 +122,9 @@ async function editAward() {
 
 <template>
   <UDashboardNavbar title="奖项管理"></UDashboardNavbar>
-  <UTable :data="awards" :columns>
+  <div class="space-y-3">
+    <UTabs v-model="activeStatus" :items="statusTabItems" variant="pill" />
+    <UTable :data="filteredAwards" :columns>
     <template #level-cell="{ row }">
       {{ t(`awards.level.${row.original.level}`) }}
     </template>
@@ -140,7 +152,8 @@ async function editAward() {
         @click="openModalEditor(row.original)"
       />
     </template>
-  </UTable>
+    </UTable>
+  </div>
 
   <UModal v-model:open="openModal" title="编辑奖项">
     <template #body>

@@ -2,8 +2,18 @@
 const UButton = resolveComponent("UButton");
 
 const { t } = useI18n();
+const activeStatus = ref("pending");
+const statusTabItems = computed(() =>
+  ["pending", "approved", "rejected", "draft"].map((value) => ({
+    label: t(`papers.status.${value}`),
+    value,
+  })),
+);
 
 const { data: papers, refresh } = await useFetch<any[]>("/api/admin/papers");
+const filteredPapers = computed(() =>
+  (papers.value || []).filter((item) => item.status === activeStatus.value),
+);
 
 function formatDateText(value: unknown) {
   if (!value || typeof value !== "string") {
@@ -107,7 +117,9 @@ async function editPaper() {
 
 <template>
   <UDashboardNavbar title="论文管理"></UDashboardNavbar>
-  <UTable :data="papers" :columns>
+  <div class="space-y-3">
+    <UTabs v-model="activeStatus" :items="statusTabItems" variant="pill" />
+    <UTable :data="filteredPapers" :columns>
     <template #type-cell="{ row }">
       {{ t(`papers.type.${row.original.type}`) }}
     </template>
@@ -132,7 +144,8 @@ async function editPaper() {
         @click="openModalEditor(row.original)"
       />
     </template>
-  </UTable>
+    </UTable>
+  </div>
 
   <UModal v-model:open="openModal" title="编辑论文">
     <template #body>

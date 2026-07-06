@@ -16,6 +16,7 @@ const updateSchema = z.object({
   description: z.string().optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
+  maxAchievementsPerUser: z.coerce.number().int().positive().nullable().optional(),
   scoringConfig: scoringConfigSchema.optional(),
 });
 
@@ -30,6 +31,7 @@ export default defineEventHandler(async (event) => {
       description: body.description,
       startDate: body.startDate,
       endDate: body.endDate,
+      maxAchievementsPerUser: body.maxAchievementsPerUser,
       scoringConfig: body.scoringConfig,
     })
     .where(eq(schema.activities.id, id))

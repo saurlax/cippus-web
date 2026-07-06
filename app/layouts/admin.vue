@@ -13,14 +13,8 @@ const items: NavigationMenuItem[] = [
     to: "/",
   },
   {
-    label: "数据管理",
+    label: "审核管理",
     type: "label",
-  },
-  {
-    label: "竞赛管理",
-    icon: "i-lucide-trophy",
-    to: "/admin/contests",
-    value: "contests",
   },
   {
     label: "奖项管理",
@@ -47,14 +41,20 @@ const items: NavigationMenuItem[] = [
     value: "innovations",
   },
   {
+    label: "平台管理",
+    type: "label",
+  },
+  {
+    label: "竞赛管理",
+    icon: "i-lucide-trophy",
+    to: "/admin/contests",
+    value: "contests",
+  },
+  {
     label: "申报管理",
     icon: "i-lucide-activity",
     to: "/admin/activities",
     value: "activities",
-  },
-  {
-    label: "平台管理",
-    type: "label",
   },
   {
     label: "公告管理",

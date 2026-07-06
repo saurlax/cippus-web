@@ -2,9 +2,19 @@
 const UButton = resolveComponent("UButton");
 
 const { t } = useI18n();
+const activeStatus = ref("pending");
+const statusTabItems = computed(() =>
+  ["pending", "approved", "rejected", "draft"].map((value) => ({
+    label: t(`innovations.status.${value}`),
+    value,
+  })),
+);
 
 const { data: innovations, refresh } = await useFetch<any[]>(
   "/api/admin/innovations",
+);
+const filteredInnovations = computed(() =>
+  (innovations.value || []).filter((item) => item.status === activeStatus.value),
 );
 
 function formatDateText(value: unknown) {
@@ -113,7 +123,9 @@ async function editInnovation() {
 
 <template>
   <UDashboardNavbar title="大创管理"></UDashboardNavbar>
-  <UTable :data="innovations" :columns>
+  <div class="space-y-3">
+    <UTabs v-model="activeStatus" :items="statusTabItems" variant="pill" />
+    <UTable :data="filteredInnovations" :columns>
     <template #type-cell="{ row }">
       {{ t(`innovations.type.${row.original.type}`) }}
     </template>
@@ -138,7 +150,8 @@ async function editInnovation() {
         @click="openModalEditor(row.original)"
       />
     </template>
-  </UTable>
+    </UTable>
+  </div>
 
   <UModal v-model:open="openModal" title="编辑大创">
     <template #body>

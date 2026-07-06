@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
       user: true,
       items: true,
     },
-    orderBy: desc(schema.applications.totalScore),
+    orderBy: desc(schema.applications.effectiveTotalScore),
   });
 
   const rows = await Promise.all(
@@ -32,6 +32,9 @@ export default defineEventHandler(async (event) => {
       userId: application.userId,
       user: application.user,
       totalScore: application.totalScore,
+      effectiveTotalScore: application.effectiveTotalScore,
+      effectiveScoreManual: application.effectiveScoreManual,
+      scoreSummary: application.scoreSummary,
       status: application.status,
       createdAt: application.createdAt,
       updatedAt: application.updatedAt,

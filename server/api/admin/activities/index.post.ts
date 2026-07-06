@@ -15,6 +15,7 @@ const createSchema = z.object({
   description: z.string().optional(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
+  maxAchievementsPerUser: z.coerce.number().int().positive().optional(),
   scoringConfig: scoringConfigSchema.optional(),
 });
 
@@ -28,6 +29,7 @@ export default defineEventHandler(async (event) => {
       description: body.description,
       startDate: body.startDate,
       endDate: body.endDate,
+      maxAchievementsPerUser: body.maxAchievementsPerUser,
       ...(body.scoringConfig ? { scoringConfig: body.scoringConfig } : {}),
     })
     .returning();

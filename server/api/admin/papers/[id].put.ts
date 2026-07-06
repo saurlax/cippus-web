@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
+import { removeAchievementFromApplications } from "~~/server/utils/application-scoring";
 import { createAchievementReviewNotification } from "~~/server/utils/notifications";
 
 const updateSchema = z.object({
@@ -46,6 +47,10 @@ export default defineEventHandler(async (event) => {
 
   if (!updated) {
     throw createError({ statusCode: 404, statusMessage: "论文记录不存在" });
+  }
+
+  if (body.status === "rejected" && current.status === "approved") {
+    await removeAchievementFromApplications("paper", id);
   }
 
   if (

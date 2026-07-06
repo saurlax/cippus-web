@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
+import { removeAchievementFromApplications } from "~~/server/utils/application-scoring";
 import { createAchievementReviewNotification } from "~~/server/utils/notifications";
 
 const updateSchema = z.object({
@@ -44,6 +45,10 @@ export default defineEventHandler(async (event) => {
     .set(updateBody)
     .where(eq(schema.awards.id, id))
     .returning();
+
+  if (body.status === "rejected" && current.status === "approved") {
+    await removeAchievementFromApplications("award", id);
+  }
 
   if (
     body.status &&

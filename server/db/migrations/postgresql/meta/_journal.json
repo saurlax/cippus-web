@@ -64,6 +64,13 @@
       "when": 1783302179536,
       "tag": "0008_clever_hydra",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783303485792,
+      "tag": "0009_spicy_mojo",
+      "breakpoints": true
     }
   ]
 }

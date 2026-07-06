@@ -6,6 +6,10 @@ import { innovationSourceKey } from "~~/server/utils/innovation-sources";
 type ScoringValue = string | number | boolean | number[];
 type ScoringConfig = Record<string, ScoringValue>;
 type AchievementTypeValue = "award" | "paper" | "patent" | "innovation";
+type ScoreSummary = Record<
+  AchievementTypeValue,
+  { totalScore: number; effectiveTotalScore: number }
+>;
 
 function readDefaultRankingFromShared(key: keyof typeof activityDefaultScoringConfig) {
   const value = activityDefaultScoringConfig[key];
@@ -52,6 +56,34 @@ function roundFinalScore(value: number): number {
     return 0;
   }
   return Math.round(value);
+}
+
+function createEmptyScoreSummary(): ScoreSummary {
+  return {
+    award: { totalScore: 0, effectiveTotalScore: 0 },
+    paper: { totalScore: 0, effectiveTotalScore: 0 },
+    patent: { totalScore: 0, effectiveTotalScore: 0 },
+    innovation: { totalScore: 0, effectiveTotalScore: 0 },
+  };
+}
+
+function applyScoreCaps(summary: ScoreSummary, scoringConfig: ScoringConfig) {
+  let totalScore = 0;
+  let effectiveTotalScore = 0;
+
+  for (const achievementType of Object.keys(summary) as AchievementTypeValue[]) {
+    const typeTotalScore = summary[achievementType].totalScore;
+    const cap = readNumber(scoringConfig[`cap.${achievementType}`], Number.POSITIVE_INFINITY);
+    const effectiveTypeScore = Number.isFinite(cap)
+      ? Math.min(typeTotalScore, cap)
+      : typeTotalScore;
+
+    summary[achievementType].effectiveTotalScore = effectiveTypeScore;
+    totalScore += typeTotalScore;
+    effectiveTotalScore += effectiveTypeScore;
+  }
+
+  return { totalScore, effectiveTotalScore, summary };
 }
 
 function readNumberArray(value: ScoringValue | undefined, fallback: number[]): number[] {
@@ -402,7 +434,7 @@ export async function recalculateApplicationById(applicationId: number) {
   const scoringConfig = (application.activity?.scoringConfig || {}) as ScoringConfig;
   const maps = await loadAchievementMaps(application.items);
 
-  let totalScore = 0;
+  const scoreSummary = createEmptyScoreSummary();
   const updatedItems: ApplicationItemView[] = [];
 
   for (const item of application.items) {
@@ -428,7 +460,7 @@ export async function recalculateApplicationById(applicationId: number) {
       })
       .where(eq(schema.applicationItems.id, item.id));
 
-    totalScore += scores.finalScore;
+    scoreSummary[item.achievementType].totalScore += scores.finalScore;
     updatedItems.push({
       id: item.id,
       applicationId: item.applicationId,
@@ -446,19 +478,59 @@ export async function recalculateApplicationById(applicationId: number) {
     });
   }
 
+  const scoreResult = applyScoreCaps(scoreSummary, scoringConfig);
+
   const beforeTotalScore = application.totalScore;
+  const beforeEffectiveTotalScore = application.effectiveTotalScore;
   const [updatedApplication] = await db
     .update(schema.applications)
-    .set({ totalScore })
+    .set({
+      totalScore: scoreResult.totalScore,
+      effectiveTotalScore: application.effectiveScoreManual
+        ? application.effectiveTotalScore
+        : scoreResult.effectiveTotalScore,
+      scoreSummary: scoreResult.summary,
+    })
     .where(eq(schema.applications.id, application.id))
     .returning();
+
+  if (!updatedApplication) {
+    throw createError({ statusCode: 404, statusMessage: "申请不存在" });
+  }
 
   return {
     application: updatedApplication,
     items: updatedItems,
     beforeTotalScore,
-    afterTotalScore: totalScore,
+    afterTotalScore: scoreResult.totalScore,
+    beforeEffectiveTotalScore,
+    afterEffectiveTotalScore: updatedApplication.effectiveTotalScore,
   };
+}
+
+export async function removeAchievementFromApplications(
+  achievementType: AchievementTypeValue,
+  achievementId: number,
+) {
+  const deletedItems = await db
+    .delete(schema.applicationItems)
+    .where(
+      and(
+        eq(schema.applicationItems.achievementType, achievementType),
+        eq(schema.applicationItems.achievementId, achievementId),
+      ),
+    )
+    .returning({ applicationId: schema.applicationItems.applicationId });
+
+  const applicationIds = Array.from(
+    new Set(deletedItems.map((item) => item.applicationId)),
+  );
+
+  for (const applicationId of applicationIds) {
+    await recalculateApplicationById(applicationId);
+  }
+
+  return applicationIds;
 }
 
 export async function listEligibleAchievements(activityId: number, username: string) {
@@ -490,8 +562,7 @@ export async function listEligibleAchievements(activityId: number, username: str
       where: and(
         sql`"awards"."members" @> ARRAY[${username}]::text[]`,
         eq(schema.awards.status, "approved"),
-        gte(schema.awards.date, startDate),
-        lte(schema.awards.date, endDate),
+        sql`(("awards"."date" >= ${startDate} AND "awards"."date" <= ${endDate}) OR ("awards"."certificate_date" >= ${startDate} AND "awards"."certificate_date" <= ${endDate}))`,
       ),
       with: {
         contest: true,
@@ -502,8 +573,7 @@ export async function listEligibleAchievements(activityId: number, username: str
       where: and(
         sql`"papers"."members" @> ARRAY[${username}]::text[]`,
         eq(schema.papers.status, "approved"),
-        gte(schema.papers.date, startDate),
-        lte(schema.papers.date, endDate),
+        sql`(("papers"."date" >= ${startDate} AND "papers"."date" <= ${endDate}) OR ("papers"."certificate_date" >= ${startDate} AND "papers"."certificate_date" <= ${endDate}))`,
       ),
       orderBy: schema.papers.date,
     }),
@@ -511,8 +581,7 @@ export async function listEligibleAchievements(activityId: number, username: str
       where: and(
         sql`"patents"."members" @> ARRAY[${username}]::text[]`,
         eq(schema.patents.status, "approved"),
-        gte(schema.patents.date, startDate),
-        lte(schema.patents.date, endDate),
+        sql`(("patents"."date" >= ${startDate} AND "patents"."date" <= ${endDate}) OR ("patents"."certificate_date" >= ${startDate} AND "patents"."certificate_date" <= ${endDate}))`,
       ),
       orderBy: schema.patents.date,
     }),
@@ -520,8 +589,7 @@ export async function listEligibleAchievements(activityId: number, username: str
       where: and(
         sql`"innovations"."members" @> ARRAY[${username}]::text[]`,
         eq(schema.innovations.status, "approved"),
-        gte(schema.innovations.date, startDate),
-        lte(schema.innovations.date, endDate),
+        sql`(("innovations"."date" >= ${startDate} AND "innovations"."date" <= ${endDate}) OR ("innovations"."certificate_date" >= ${startDate} AND "innovations"."certificate_date" <= ${endDate}))`,
       ),
       orderBy: schema.innovations.date,
     }),

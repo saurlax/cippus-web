@@ -29,6 +29,11 @@ type InnovationBaseRow = {
   score: number;
 };
 
+type ScoreCapRow = {
+  type: "award" | "paper" | "patent" | "innovation";
+  cap: number;
+};
+
 type ContestExtraRow = {
   contestId: string;
   level: string;
@@ -82,6 +87,12 @@ const innovationTypeItems = innovationTypeValues.map((value) => ({
   value,
   label: t(`innovations.type.${value}`),
 }));
+const achievementTypeItems = [
+  { value: "award", label: "奖项" },
+  { value: "paper", label: "论文" },
+  { value: "patent", label: "专利" },
+  { value: "innovation", label: "大创" },
+];
 const contestItems = computed(() => 
   (contests.value || []).map((c: any) => ({
     value: String(c.id),
@@ -143,6 +154,7 @@ function createEmptyActivity() {
     description: "",
     startDate: toDateInputValue(new Date()),
     endDate: toDateInputValue(new Date()),
+    maxAchievementsPerUser: undefined as number | undefined,
     scoringConfig: { ...defaultConfig } as ScoringConfig,
   };
 }
@@ -151,12 +163,14 @@ const columns = [
   { accessorKey: "id", header: "#" },
   { accessorKey: "name", header: "名称" },
   { accessorKey: "description", header: "描述" },
+  { accessorKey: "maxAchievementsPerUser", header: "每人最多申报" },
   { accessorKey: "startDate", header: "开始日期" },
   { accessorKey: "endDate", header: "结束日期" },
   { id: "actions", header: "操作" },
 ];
 
 const openModal = ref(false);
+const deletingActivityId = ref<number>();
 const currentActivity = ref<any>(createEmptyActivity());
 const editorMode = ref<"visual" | "json">("visual");
 const scoringConfigText = ref(
@@ -169,6 +183,7 @@ const patentBaseRows = ref<PatentBaseRow[]>([]);
 const innovationBaseRows = ref<InnovationBaseRow[]>([]);
 const contestExtraRows = ref<ContestExtraRow[]>([]);
 const contestMultiplierRows = ref<ContestMultiplierRow[]>([]);
+const scoreCapRows = ref<ScoreCapRow[]>([]);
 const otherEntries = ref<ScoringConfig>({});
 const awardRankingCoefficients = ref<number[]>([...defaultRankingByType.award]);
 const paperRankingCoefficients = ref<number[]>([...defaultRankingByType.paper]);
@@ -239,6 +254,12 @@ function buildVisualRowsFromConfig(config: ScoringConfig = {}) {
   innovationBaseRows.value = [];
   contestExtraRows.value = [];
   contestMultiplierRows.value = [];
+  scoreCapRows.value = [
+    { type: "award", cap: readNumber(config["cap.award"], 999) },
+    { type: "paper", cap: readNumber(config["cap.paper"], 999) },
+    { type: "patent", cap: readNumber(config["cap.patent"], 20) },
+    { type: "innovation", cap: readNumber(config["cap.innovation"], 999) },
+  ];
   otherEntries.value = {};
   awardRankingCoefficients.value = readRankingCoefficients(
     config["ranking.award"],
@@ -326,6 +347,7 @@ function buildVisualRowsFromConfig(config: ScoringConfig = {}) {
       !key.startsWith("patent.") &&
       !key.startsWith("innovation.") &&
       !key.startsWith("ranking.") &&
+      !key.startsWith("cap.") &&
       !key.startsWith("contest.")
     ) {
       otherEntries.value[key] = value;
@@ -342,6 +364,10 @@ function buildConfigFromVisual(): ScoringConfig {
   next["ranking.paper"] = [...paperRankingCoefficients.value];
   next["ranking.patent"] = [...patentRankingCoefficients.value];
   next["ranking.innovation"] = [...innovationRankingCoefficients.value];
+
+  for (const row of scoreCapRows.value) {
+    next[`cap.${row.type}`] = Number(row.cap || 0);
+  }
 
   for (const row of awardBaseRows.value) {
     if (row.level.trim() && row.type.trim()) {
@@ -489,6 +515,25 @@ async function updateActivity() {
   }
 }
 
+async function deleteActivity(id: number) {
+  if (deletingActivityId.value) return;
+
+  try {
+    deletingActivityId.value = id;
+    await $fetch(`/api/admin/activities/${id}`, { method: "DELETE" });
+    activities.value = await $fetch<any>("/api/admin/activities");
+    toast.add({ title: "活动已删除", color: "success" });
+  } catch (e: any) {
+    toast.add({
+      title: "删除失败",
+      description: e?.data?.message || e?.message,
+      color: "error",
+    });
+  } finally {
+    deletingActivityId.value = undefined;
+  }
+}
+
 watch(
   [
     awardBaseRows,
@@ -497,6 +542,7 @@ watch(
     innovationBaseRows,
     contestExtraRows,
     contestMultiplierRows,
+    scoreCapRows,
     awardRankingCoefficients,
     paperRankingCoefficients,
     patentRankingCoefficients,
@@ -538,6 +584,14 @@ watch(
         variant="ghost"
         @click="openModalEditor(row.original)"
       />
+      <UButton
+        icon="i-lucide-trash-2"
+        size="sm"
+        color="error"
+        variant="ghost"
+        :loading="deletingActivityId === row.original.id"
+        @click="deleteActivity(row.original.id)"
+      />
     </template>
   </UTable>
   <UModal v-model:open="openModal" title="编辑活动">
@@ -571,6 +625,15 @@ watch(
             v-model="currentActivity.endDate"
           />
         </UFormField>
+        <UFormField label="每个用户最多申报成就数量" name="maxAchievementsPerUser">
+          <UInput
+            class="w-full"
+            v-model.number="currentActivity.maxAchievementsPerUser"
+            type="number"
+            min="1"
+            placeholder="不填则不限制"
+          />
+        </UFormField>
 
         <div class="rounded-md border border-default p-3 space-y-3">
           <div class="flex items-center justify-between gap-2">
@@ -594,6 +657,25 @@ watch(
           </div>
 
           <template v-if="editorMode === 'visual'">
+            <div class="space-y-2">
+              <p class="text-sm font-medium">累计加分上限</p>
+              <div
+                v-for="row in scoreCapRows"
+                :key="`cap-${row.type}`"
+                class="grid grid-cols-12 gap-2 items-center"
+              >
+                <div class="col-span-7 text-sm">
+                  {{ achievementTypeItems.find((item) => item.value === row.type)?.label }}
+                </div>
+                <UInput
+                  class="col-span-5"
+                  type="number"
+                  min="0"
+                  v-model.number="row.cap"
+                />
+              </div>
+            </div>
+
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <p class="text-sm font-medium">奖项排名系数</p>

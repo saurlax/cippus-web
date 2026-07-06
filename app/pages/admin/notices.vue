@@ -14,6 +14,7 @@ const columns = [
   { id: "actions", header: "操作" },
 ];
 const openModal = ref(false);
+const deletingNoticeId = ref<number>();
 const currentNotice = ref<any>({
   title: "",
   category: "",
@@ -59,6 +60,18 @@ async function updateNotice() {
   await refreshNotices();
   closeModal();
 }
+
+async function deleteNotice(id: number) {
+  if (deletingNoticeId.value) return;
+
+  try {
+    deletingNoticeId.value = id;
+    await $fetch(`/api/admin/notices/${id}`, { method: "DELETE" });
+    await refreshNotices();
+  } finally {
+    deletingNoticeId.value = undefined;
+  }
+}
 </script>
 
 <template>
@@ -81,6 +94,14 @@ async function updateNotice() {
         variant="ghost"
         size="sm"
         @click="openModalEditor(row.original)"
+      />
+      <UButton
+        icon="i-lucide-trash-2"
+        color="error"
+        variant="ghost"
+        size="sm"
+        :loading="deletingNoticeId === row.original.id"
+        @click="deleteNotice(row.original.id)"
       />
     </template>
   </UTable>

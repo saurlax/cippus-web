@@ -11,11 +11,15 @@ export default defineEventHandler(async (event) => {
 
   const activity = await db.query.activities.findFirst({
     where: eq(schema.activities.id, activityId),
-    columns: { id: true },
+    columns: { id: true, endDate: true },
   });
 
   if (!activity) {
     throw createError({ statusCode: 404, statusMessage: "活动不存在" });
+  }
+
+  if (activity.endDate < new Date()) {
+    throw createError({ statusCode: 400, statusMessage: "申报已结束" });
   }
 
   const user = await db.query.users.findFirst({
@@ -46,6 +50,7 @@ export default defineEventHandler(async (event) => {
       userId: user.id,
       status: "draft",
       totalScore: 0,
+      effectiveTotalScore: 0,
     })
     .returning();
 

@@ -40,6 +40,17 @@ export default defineEventHandler(async (event) => {
 
   const body = bodySchema.parse(await readBody(event));
 
+  if (application.activity.endDate < new Date()) {
+    throw createError({ statusCode: 400, statusMessage: "申报已结束" });
+  }
+
+  if (
+    application.activity.maxAchievementsPerUser &&
+    application.items.length >= application.activity.maxAchievementsPerUser
+  ) {
+    throw createError({ statusCode: 400, statusMessage: "已达到本活动最多申报数量" });
+  }
+
   const existing = application.items.find(
     (item) =>
       item.achievementType === body.achievementType &&

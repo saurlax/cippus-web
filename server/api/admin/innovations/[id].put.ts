@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
 import type { InnovationAchievementType } from "#shared/types/db";
+import { removeAchievementFromApplications } from "~~/server/utils/application-scoring";
 import { assertInnovationSourceAvailable } from "~~/server/utils/innovation-sources";
 import { createAchievementReviewNotification } from "~~/server/utils/notifications";
 
@@ -64,6 +65,10 @@ export default defineEventHandler(async (event) => {
 
   if (!updated) {
     throw createError({ statusCode: 404, statusMessage: "大创记录不存在" });
+  }
+
+  if (body.status === "rejected" && current.status === "approved") {
+    await removeAchievementFromApplications("innovation", id);
   }
 
   if (

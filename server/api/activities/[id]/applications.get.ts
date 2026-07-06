@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import { buildApplicationItemsView } from "~~/server/utils/application-scoring";
 
@@ -27,13 +27,19 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: "用户不存在" });
   }
 
+  const isAdmin = !!session.user.admin;
   const applications = await db.query.applications.findMany({
-    where: eq(schema.applications.activityId, activityId),
+    where: isAdmin
+      ? eq(schema.applications.activityId, activityId)
+      : and(
+          eq(schema.applications.activityId, activityId),
+          eq(schema.applications.userId, currentUser.id),
+        ),
     with: {
       user: true,
       items: true,
     },
-    orderBy: desc(schema.applications.totalScore),
+    orderBy: desc(schema.applications.effectiveTotalScore),
   });
 
   const sortedApplications = [...applications].sort((a, b) => {
@@ -42,8 +48,8 @@ export default defineEventHandler(async (event) => {
 
     if (aSelf && !bSelf) return -1;
     if (!aSelf && bSelf) return 1;
-    if (b.totalScore !== a.totalScore) {
-      return b.totalScore - a.totalScore;
+    if (b.effectiveTotalScore !== a.effectiveTotalScore) {
+      return b.effectiveTotalScore - a.effectiveTotalScore;
     }
     return a.id - b.id;
   });
@@ -56,6 +62,9 @@ export default defineEventHandler(async (event) => {
       userId: application.userId,
       user: application.user,
       totalScore: application.totalScore,
+      effectiveTotalScore: application.effectiveTotalScore,
+      effectiveScoreManual: application.effectiveScoreManual,
+      scoreSummary: application.scoreSummary,
       status: application.status,
       createdAt: application.createdAt,
       updatedAt: application.updatedAt,

@@ -73,6 +73,11 @@ export type ScoringValue = string | number | boolean | number[];
 export type ScoringConfig = Record<string, ScoringValue>;
 
 export const defaultScoringConfig: ScoringConfig = {
+  "cap.award": 999,
+  "cap.paper": 999,
+  "cap.patent": 20,
+  "cap.innovation": 999,
+
   // 国家级
   "award.national.first_place": 20,
   "award.national.second_place": 18,
@@ -316,6 +321,7 @@ export const activities = pgTable("activities", {
   description: text("description"),
   startDate: timestamp("start_date", { mode: "date" }).notNull(),
   endDate: timestamp("end_date", { mode: "date" }).notNull(),
+  maxAchievementsPerUser: integer("max_achievements_per_user"),
   scoringConfig: jsonb("scoring_config")
     .$type<ScoringConfig>()
     .notNull()
@@ -337,6 +343,12 @@ export const applications = pgTable("applications", {
       onUpdate: "cascade",
     }),
   totalScore: integer("total_score").notNull().default(0),
+    effectiveTotalScore: integer("effective_total_score").notNull().default(0),
+    effectiveScoreManual: boolean("effective_score_manual").notNull().default(false),
+    scoreSummary: jsonb("score_summary")
+      .$type<Record<string, { totalScore: number; effectiveTotalScore: number }>>()
+      .notNull()
+      .default({}),
   status: reviewStatusEnum("status").notNull().default("draft"),
   createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { mode: "date" })

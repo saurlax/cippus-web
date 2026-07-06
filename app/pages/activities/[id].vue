@@ -60,6 +60,7 @@ type ItemTableRow = {
   rank: string;
   user: { name: string; username: string };
   totalScore: string;
+  effectiveTotalScore: string;
   itemCount: string;
   canManage: boolean;
   children?: ItemTableRow[];
@@ -72,6 +73,7 @@ type ApplicationTableRow = {
   isCurrentUser: boolean;
   user: { name?: string; username?: string };
   totalScore: number;
+  effectiveTotalScore: number;
   itemCount: number;
   children: ItemTableRow[];
 };
@@ -109,6 +111,7 @@ const columns: TableColumn<TableRow>[] = [
   { accessorKey: "user.username", header: "学号 / 类型" },
   { accessorKey: "itemCount", header: "条目数量 / 日期" },
   { accessorKey: "totalScore", header: "总分" },
+  { accessorKey: "effectiveTotalScore", header: "有效总分" },
   { id: "actions", header: "操作" },
 ];
 
@@ -126,13 +129,14 @@ const tableData = computed<TableRow[]>(() => {
         rowType: "item",
         id: item.id,
         parentApplicationId: application.id,
-        rank: "-",
+        rank: item.categoryLabel,
         user: {
           name: item.displayName,
           username: item.displayType,
         },
         itemCount: item.achievementDate || "-",
         totalScore: item.formula,
+        effectiveTotalScore: "-",
         canManage: !!application.isCurrentUser,
       }),
     );
@@ -144,6 +148,7 @@ const tableData = computed<TableRow[]>(() => {
       isCurrentUser: !!application.isCurrentUser,
       user: application.user,
       totalScore: application.totalScore,
+      effectiveTotalScore: application.effectiveTotalScore,
       itemCount: application.itemCount,
       children: itemRows,
     } satisfies ApplicationTableRow;
@@ -180,6 +185,24 @@ const achievementOptions = computed(() => {
     disabled: !!item.selected,
   }));
 });
+
+const scoreSummaryItems = computed(() => {
+  const summary = ownApplication.value?.scoreSummary || {};
+  return achievementTypeItems.map((item) => {
+    const scores = summary[item.value] || {};
+    return {
+      ...item,
+      totalScore: Number(scores.totalScore || 0),
+      effectiveTotalScore: Number(scores.effectiveTotalScore || 0),
+    };
+  });
+});
+
+const scoreSummaryColumns: TableColumn<any>[] = [
+  { accessorKey: "label", header: "栏目" },
+  { accessorKey: "totalScore", header: "总分" },
+  { accessorKey: "effectiveTotalScore", header: "有效总分" },
+];
 
 type AwardRuleRow = {
   level: string;
@@ -375,6 +398,9 @@ const ruleTabItems = computed<any[]>(() => {
 function toItemRows(items: any[]) {
   return (items || []).map((item) => ({
     ...item,
+    categoryLabel: achievementTypeItems.find(
+      (typeItem) => typeItem.value === item.achievementType,
+    )?.label || "-",
     displayType: formatTypeLabel(item),
     achievementDate: formatDateTime(item.achievementDate),
     formula: `${item.baseScore} x ${item.multiplier} + ${item.extraScore} = ${item.finalScore}`,
@@ -627,6 +653,12 @@ watch(selectedAchievementType, () => {
       />
 
       <div v-if="loggedIn" class="rounded-lg border border-default">
+        <UTable
+          v-if="ownApplication"
+          :data="scoreSummaryItems"
+          :columns="scoreSummaryColumns"
+          :ui="{ td: 'py-2', th: 'py-2' }"
+        />
         <UTable
           v-model:expanded="expanded"
           :data="tableData"

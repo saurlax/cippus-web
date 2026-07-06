@@ -2,8 +2,18 @@
 const UButton = resolveComponent("UButton");
 
 const { t } = useI18n();
+const activeStatus = ref("pending");
+const statusTabItems = computed(() =>
+  ["pending", "approved", "rejected", "draft"].map((value) => ({
+    label: t(`patents.status.${value}`),
+    value,
+  })),
+);
 
 const { data: patents, refresh } = await useFetch<any[]>("/api/admin/patents");
+const filteredPatents = computed(() =>
+  (patents.value || []).filter((item) => item.status === activeStatus.value),
+);
 
 function formatDateText(value: unknown) {
   if (!value || typeof value !== "string") {
@@ -107,7 +117,9 @@ async function editPatent() {
 
 <template>
   <UDashboardNavbar title="专利管理"></UDashboardNavbar>
-  <UTable :data="patents" :columns>
+  <div class="space-y-3">
+    <UTabs v-model="activeStatus" :items="statusTabItems" variant="pill" />
+    <UTable :data="filteredPatents" :columns>
     <template #type-cell="{ row }">
       {{ t(`patents.type.${row.original.type}`) }}
     </template>
@@ -132,7 +144,8 @@ async function editPatent() {
         @click="openModalEditor(row.original)"
       />
     </template>
-  </UTable>
+    </UTable>
+  </div>
 
   <UModal v-model:open="openModal" title="编辑专利">
     <template #body>

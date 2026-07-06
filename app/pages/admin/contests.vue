@@ -12,6 +12,7 @@ const columns = [
   { id: "actions", header: "操作" },
 ];
 const openModal = ref(false);
+const deletingContestId = ref<number>();
 const currentContest = ref<any>({
   title: "",
   description: "",
@@ -55,6 +56,18 @@ async function updateContest() {
   refresh();
   closeModal();
 }
+
+async function deleteContest(id: number) {
+  if (deletingContestId.value) return;
+
+  try {
+    deletingContestId.value = id;
+    await $fetch(`/api/admin/contests/${id}`, { method: "DELETE" });
+    await refresh();
+  } finally {
+    deletingContestId.value = undefined;
+  }
+}
 </script>
 
 <template>
@@ -77,6 +90,14 @@ async function updateContest() {
         variant="ghost"
         size="sm"
         @click="openModalEditor(row.original)"
+      />
+      <UButton
+        icon="i-lucide-trash-2"
+        color="error"
+        variant="ghost"
+        size="sm"
+        :loading="deletingContestId === row.original.id"
+        @click="deleteContest(row.original.id)"
       />
     </template>
   </UTable>
