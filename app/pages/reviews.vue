@@ -3,10 +3,6 @@ const { user: sessionUser } = useUserSession();
 const toast = useToast();
 const { t } = useI18n();
 
-if (!sessionUser.value?.username) {
-  throw createError({ statusCode: 401, statusMessage: "请先登录" });
-}
-
 const username = computed(() => sessionUser.value?.username || "");
 const activeKind = ref<"award" | "paper" | "patent" | "innovation">("award");
 const saving = ref(false);

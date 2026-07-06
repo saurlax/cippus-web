@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AuthFormProps, FormSubmitEvent } from "@nuxt/ui";
 const { fetch } = useUserSession();
+const route = useRoute();
 const toast = useToast();
 const providers = ref([
   {
@@ -31,7 +32,8 @@ function login(payload: FormSubmitEvent<any>) {
   })
     .then(async () => {
       await fetch();
-      navigateTo("/");
+      const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/";
+      navigateTo(redirect);
     })
     .catch((e: any) => {
       console.log(e);
