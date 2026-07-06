@@ -5,6 +5,10 @@ const { data, refresh } = await useFetch("/api/notifications");
 const notifications = computed(() => data.value?.notifications || []);
 const unreadCount = computed(() => data.value?.unreadCount || 0);
 
+function getResourceLink(notification: any) {
+  return notification.resourceType && notification.resourceId ? "/reviews" : undefined;
+}
+
 async function markAsRead(id: number) {
   try {
     await $fetch(`/api/notifications/${id}`, { method: "PUT" });
@@ -51,8 +55,17 @@ async function markAsRead(id: number) {
 
           <p>{{ notification.content }}</p>
 
-          <template v-if="!notification.readAt" #footer>
+          <template v-if="!notification.readAt || getResourceLink(notification)" #footer>
             <UButton
+              v-if="getResourceLink(notification)"
+              icon="i-lucide-arrow-right"
+              variant="outline"
+              :to="getResourceLink(notification)"
+            >
+              查看相关成果
+            </UButton>
+            <UButton
+              v-if="!notification.readAt"
               icon="i-lucide-check"
               variant="soft"
               @click="markAsRead(notification.id)"

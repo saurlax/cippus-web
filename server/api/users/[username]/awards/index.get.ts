@@ -1,5 +1,30 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
+
+async function attachReviewNotifications(userId: number, awards: any[]) {
+  const ids = awards.map((item) => item.id);
+  if (!ids.length) {
+    return awards;
+  }
+
+  const notifications = await db.query.userNotifications.findMany({
+    where: and(
+      eq(schema.userNotifications.userId, userId),
+      eq(schema.userNotifications.resourceType, "award"),
+      inArray(schema.userNotifications.resourceId, ids),
+    ),
+    orderBy: desc(schema.userNotifications.createdAt),
+  });
+  const notificationsByResource = Map.groupBy(
+    notifications,
+    (item) => item.resourceId,
+  );
+
+  return awards.map((item) => ({
+    ...item,
+    reviewNotifications: notificationsByResource.get(item.id) || [],
+  }));
+}
 
 export default defineEventHandler(async (event) => {
   const username = getRouterParam(event, "username");
@@ -9,7 +34,7 @@ export default defineEventHandler(async (event) => {
 
   const user = await db.query.users.findFirst({
     where: eq(schema.users.username, username),
-    columns: { username: true },
+    columns: { id: true, username: true },
   });
 
   if (!user) {
@@ -32,5 +57,5 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  return awards;
+  return await attachReviewNotifications(user.id, awards);
 });

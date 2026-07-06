@@ -187,11 +187,19 @@ export const userNotifications = pgTable(
     title: text("title").notNull(),
     content: text("content").notNull(),
     category: text("category"),
+    resourceType: achievementTypeEnum("resource_type"),
+    resourceId: integer("resource_id"),
+    reviewStatus: reviewStatusEnum("review_status"),
+    reason: text("reason"),
     readAt: timestamp("read_at", { mode: "date" }),
     createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
   },
   (table) => ({
     userIdIdx: index("user_notifications_user_id_idx").on(table.userId),
+    resourceIdx: index("user_notifications_resource_idx").on(
+      table.resourceType,
+      table.resourceId,
+    ),
   }),
 );
 
@@ -226,6 +234,7 @@ export const awards = pgTable("awards", {
   evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull().defaultNow(),
+  certificateDate: timestamp("certificate_date", { mode: "date" }),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
     .defaultNow()
@@ -246,6 +255,7 @@ export const papers = pgTable("papers", {
   evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
+  certificateDate: timestamp("certificate_date", { mode: "date" }),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
     .defaultNow()
@@ -266,6 +276,7 @@ export const patents = pgTable("patents", {
   evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
+  certificateDate: timestamp("certificate_date", { mode: "date" }),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
     .defaultNow()
@@ -288,6 +299,7 @@ export const innovations = pgTable("innovations", {
   evidences: text("evidences").array().notNull().default([]),
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
+  certificateDate: timestamp("certificate_date", { mode: "date" }),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
     .defaultNow()

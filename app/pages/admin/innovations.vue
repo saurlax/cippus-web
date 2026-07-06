@@ -75,6 +75,7 @@ function openModalEditor(item?: any) {
       members: item.members || [],
       status: item.status,
       evidences: item.evidences || [],
+      reviewReason: "",
     };
     membersTags.value = normalizeMembersList(item.members as string[]);
   } else {
@@ -101,6 +102,7 @@ async function editInnovation() {
       date: currentInnovation.value.date,
       members: normalizeMembersList(membersTags.value),
       status: currentInnovation.value.status,
+      reviewReason: currentInnovation.value.reviewReason,
     },
   });
 
@@ -174,6 +176,14 @@ async function editInnovation() {
             class="w-full"
             :items="statusItems as any"
           />
+        </UFormField>
+        <UFormField
+          v-if="currentInnovation.status === 'rejected'"
+          label="拒绝理由"
+          name="reviewReason"
+          required
+        >
+          <UTextarea v-model="currentInnovation.reviewReason" class="w-full" />
         </UFormField>
         <UFormField label="附件" name="evidences">
           <EvidencePreview :evidences="currentInnovation.evidences || []" />

@@ -8,8 +8,11 @@ const updateSchema = z.object({
   date: z.coerce.date().optional(),
   members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
+  certificateDate: z.coerce.date().optional(),
   status: z.enum(["draft", "pending"]).optional(),
 });
+
+const supplementKeys = new Set(["evidences", "certificateDate"]);
 
 function normalizeMembers(members: string[] | undefined) {
   return Array.from(
@@ -29,6 +32,31 @@ export default defineEventHandler(async (event) => {
     columns: { id: true },
   });
   const body = updateSchema.parse(await readBody(event));
+  const current = await db.query.papers.findFirst({
+    where: and(eq(schema.papers.id, id), eq(schema.papers.userId, user!.id)),
+  });
+
+  if (!current) {
+    throw createError({ statusCode: 404, statusMessage: "论文记录不存在" });
+  }
+
+  if (current.status === "approved") {
+    const hasCoreUpdate = Object.keys(body).some((key) => !supplementKeys.has(key));
+    if (hasCoreUpdate) {
+      throw createError({ statusCode: 400, statusMessage: "已通过审核的成就只能补充证书日期和佐证材料" });
+    }
+
+    const [paper] = await db
+      .update(schema.papers)
+      .set({
+        ...(body.certificateDate ? { certificateDate: body.certificateDate } : {}),
+        ...(body.evidences ? { evidences: Array.from(new Set([...current.evidences, ...body.evidences])) } : {}),
+      })
+      .where(and(eq(schema.papers.id, id), eq(schema.papers.userId, user!.id)))
+      .returning();
+    return paper;
+  }
+
   const updateBody = {
     ...body,
     ...(body.members ? { members: normalizeMembers(body.members) } : {}),

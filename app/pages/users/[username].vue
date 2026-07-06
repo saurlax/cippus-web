@@ -782,6 +782,13 @@ async function saveRecordDraft() {
         <UButton
           v-if="isSelf"
           variant="outline"
+          to="/reviews"
+          icon="i-lucide-clipboard-check"
+          label="奖项审核"
+        />
+        <UButton
+          v-if="isSelf"
+          variant="outline"
           icon="i-lucide-pencil"
           label="编辑资料"
           @click="startEdit"
@@ -803,19 +810,9 @@ async function saveRecordDraft() {
         <UPageCard title="奖项">
           <UPageGrid cols="1 sm:2 md:3" gap="4" class="mt-4">
             <UPageCard
-              v-if="canEditRecords"
-              class="cursor-pointer"
-              icon="i-lucide-plus"
-              description="添加奖项"
-              spotlight
-              @click="startAddAward"
-            />
-            <UPageCard
               v-for="award in awardsList"
               :key="award.id"
-              :class="canEditOwnedRecord(award.userId) ? 'cursor-pointer' : ''"
               :title="award.contest?.title || '未知比赛'"
-              @click="startEditAward(award)"
             >
               <template #description>
                 <div class="space-y-2">
@@ -871,19 +868,9 @@ async function saveRecordDraft() {
         <UPageCard title="论文">
           <UPageGrid cols="1 sm:2 md:3" gap="4" class="mt-4">
             <UPageCard
-              v-if="canEditRecords"
-              class="cursor-pointer"
-              icon="i-lucide-plus"
-              description="添加论文"
-              spotlight
-              @click="startRecord('paper')"
-            />
-            <UPageCard
               v-for="paper in papersList"
               :key="paper.id"
-              :class="canEditOwnedRecord(paper.userId) ? 'cursor-pointer' : ''"
               :title="paper.name"
-              @click="startRecord('paper', paper)"
             >
               <template #description>
                 <div class="space-y-2">
@@ -934,19 +921,9 @@ async function saveRecordDraft() {
         <UPageCard title="专利">
           <UPageGrid cols="1 sm:2 md:3" gap="4" class="mt-4">
             <UPageCard
-              v-if="canEditRecords"
-              class="cursor-pointer"
-              icon="i-lucide-plus"
-              description="添加专利"
-              spotlight
-              @click="startRecord('patent')"
-            />
-            <UPageCard
               v-for="patent in patentsList"
               :key="patent.id"
-              :class="canEditOwnedRecord(patent.userId) ? 'cursor-pointer' : ''"
               :title="patent.name"
-              @click="startRecord('patent', patent)"
             >
               <template #description>
                 <div class="space-y-2">
@@ -999,21 +976,9 @@ async function saveRecordDraft() {
         <UPageCard title="大创">
           <UPageGrid cols="1 sm:2 md:3" gap="4" class="mt-4">
             <UPageCard
-              v-if="canEditRecords"
-              class="cursor-pointer"
-              icon="i-lucide-plus"
-              description="添加大创"
-              spotlight
-              @click="startRecord('innovation')"
-            />
-            <UPageCard
               v-for="innovation in innovationsList"
               :key="innovation.id"
-              :class="
-                canEditOwnedRecord(innovation.userId) ? 'cursor-pointer' : ''
-              "
               :title="innovation.name"
-              @click="startRecord('innovation', innovation)"
             >
               <template #description>
                 <div class="space-y-2">

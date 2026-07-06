@@ -10,6 +10,7 @@ const updateSchema = z.object({
   date: z.coerce.date().optional(),
   members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
+  reviewReason: z.string().trim().optional(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -31,9 +32,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: "论文记录不存在" });
   }
 
+  if (body.status === "rejected" && !body.reviewReason) {
+    throw createError({ statusCode: 400, statusMessage: "拒绝审核时必须填写理由" });
+  }
+
+  const { reviewReason, ...updateBody } = body;
+
   const [updated] = await db
     .update(schema.papers)
-    .set(body)
+    .set(updateBody)
     .where(eq(schema.papers.id, id))
     .returning();
 
@@ -48,9 +55,12 @@ export default defineEventHandler(async (event) => {
   ) {
     await createAchievementReviewNotification({
       userId: current.user.id,
+      resourceType: "paper",
+      resourceId: current.id,
       recordTypeLabel: "论文",
       recordName: updated.name,
       status: body.status,
+      reason: reviewReason,
     });
   }
 

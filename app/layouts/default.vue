@@ -9,16 +9,16 @@ const navItems = computed(() => {
       to: "/notices",
     },
     {
-      label: "竞赛",
+      label: "收录竞赛",
       to: "/contests",
     },
     {
-      label: "申报",
+      label: "积分申报",
       to: "/activities",
     },
   ];
   if (user.value) {
-    links.push({ label: "站内信", to: "/notifications" });
+    links.push({ label: "奖项审核", to: "/reviews" });
     links.push({ label: "个人资料", to: `/users/${user.value?.username}` });
   }
   if (user.value?.admin) {
@@ -32,7 +32,10 @@ const navItems = computed(() => {
 
 const userItems = computed(() => {
   if (loggedIn.value) {
-    return [{ label: "退出登录", onSelect: clear }];
+    return [
+      { label: "站内信", to: "/notifications", icon: "i-lucide-bell" },
+      { label: "退出登录", onSelect: clear, icon: "i-lucide-log-out" },
+    ];
   } else {
     return [
       {

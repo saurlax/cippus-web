@@ -69,6 +69,7 @@ function openModalEditor(item?: any) {
       members: item.members || [],
       status: item.status,
       evidences: item.evidences || [],
+      reviewReason: "",
     };
     membersTags.value = normalizeMembersList(item.members as string[]);
   } else {
@@ -95,6 +96,7 @@ async function editPatent() {
       date: currentPatent.value.date,
       members: normalizeMembersList(membersTags.value),
       status: currentPatent.value.status,
+      reviewReason: currentPatent.value.reviewReason,
     },
   });
 
@@ -161,6 +163,14 @@ async function editPatent() {
             class="w-full"
             :items="statusItems as any"
           />
+        </UFormField>
+        <UFormField
+          v-if="currentPatent.status === 'rejected'"
+          label="拒绝理由"
+          name="reviewReason"
+          required
+        >
+          <UTextarea v-model="currentPatent.reviewReason" class="w-full" />
         </UFormField>
         <UFormField label="附件" name="evidences">
           <EvidencePreview :evidences="currentPatent.evidences || []" />

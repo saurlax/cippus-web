@@ -50,6 +50,13 @@
       "when": 1783240933077,
       "tag": "0006_careless_ares",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783298597153,
+      "tag": "0007_complex_maverick",
+      "breakpoints": true
     }
   ]
 }

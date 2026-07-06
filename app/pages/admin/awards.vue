@@ -74,6 +74,7 @@ function openModalEditor(item?: any) {
       date: formatDateText(item.date),
       members: item.members || [],
       evidences: item.evidences || [],
+      reviewReason: "",
     };
     membersTags.value = normalizeMembersList(item.members as string[]);
   } else {
@@ -100,6 +101,7 @@ async function editAward() {
       type: currentAward.value.type,
       date: currentAward.value.date,
       members: normalizeMembersList(membersTags.value),
+      reviewReason: currentAward.value.reviewReason,
     },
   });
 
@@ -173,6 +175,14 @@ async function editAward() {
             class="w-full"
             :items="statusItems as any"
           />
+        </UFormField>
+        <UFormField
+          v-if="currentAward.status === 'rejected'"
+          label="拒绝理由"
+          name="reviewReason"
+          required
+        >
+          <UTextarea v-model="currentAward.reviewReason" class="w-full" />
         </UFormField>
         <UFormField label="附件" name="evidences">
           <EvidencePreview :evidences="currentAward.evidences || []" />

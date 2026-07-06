@@ -1,0 +1,9 @@
+ALTER TABLE "awards" ADD COLUMN "certificate_date" timestamp;--> statement-breakpoint
+ALTER TABLE "innovations" ADD COLUMN "certificate_date" timestamp;--> statement-breakpoint
+ALTER TABLE "papers" ADD COLUMN "certificate_date" timestamp;--> statement-breakpoint
+ALTER TABLE "patents" ADD COLUMN "certificate_date" timestamp;--> statement-breakpoint
+ALTER TABLE "user_notifications" ADD COLUMN "resource_type" "achievement_type";--> statement-breakpoint
+ALTER TABLE "user_notifications" ADD COLUMN "resource_id" integer;--> statement-breakpoint
+ALTER TABLE "user_notifications" ADD COLUMN "review_status" "review_status";--> statement-breakpoint
+ALTER TABLE "user_notifications" ADD COLUMN "reason" text;--> statement-breakpoint
+CREATE INDEX "user_notifications_resource_idx" ON "user_notifications" USING btree ("resource_type","resource_id");
