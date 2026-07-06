@@ -43,6 +43,13 @@
       "when": 1782288940195,
       "tag": "0006_bizarre_human_robot",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783240933077,
+      "tag": "0006_careless_ares",
+      "breakpoints": true
     }
   ]
 }

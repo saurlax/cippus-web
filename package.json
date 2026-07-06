@@ -16,7 +16,6 @@
     "dayjs": "^1.11.19",
     "drizzle-kit": "^0.31.9",
     "drizzle-orm": "^0.45.1",
-    "nodemailer": "^7.0.6",
     "nuxt": "^4.3.1",
     "nuxt-auth-utils": "0.5.29",
     "postgres": "^3.4.8",
@@ -25,8 +24,5 @@
     "vue-router": "^5.0.3",
     "zod": "^4.3.6"
   },
-  "packageManager": "pnpm@10.32.1",
-  "devDependencies": {
-    "nuxt-nodemailer": "^1.1.4"
-  }
+  "packageManager": "pnpm@10.32.1"
 }

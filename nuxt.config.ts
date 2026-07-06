@@ -8,7 +8,6 @@ export default defineNuxtConfig({
     "nuxt-auth-utils",
     "@nuxthub/core",
     "@nuxtjs/i18n",
-    "nuxt-nodemailer",
   ],
   routeRules: {
     "/admin/**": { appLayout: "admin" },
@@ -19,16 +18,6 @@ export default defineNuxtConfig({
   hub: {
     db: "postgresql",
     blob: true,
-  },
-  nodemailer: {
-    from: "",
-    host: "",
-    port: 587,
-    secure: false,
-    auth: {
-      user: "",
-      pass: "",
-    },
   },
   runtimeConfig: {
     casBaseUrl: "https://sso.dlut.edu.cn/cas",

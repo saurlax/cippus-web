@@ -3,7 +3,7 @@ import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
 import type { InnovationAchievementType } from "#shared/types/db";
 import { assertInnovationSourceAvailable } from "~~/server/utils/innovation-sources";
-import { sendAchievementReviewEmail } from "~~/server/utils/review-email";
+import { createAchievementReviewNotification } from "~~/server/utils/notifications";
 
 const updateSchema = z.object({
   name: z.string().trim().min(1).optional(),
@@ -24,8 +24,8 @@ export default defineEventHandler(async (event) => {
     with: {
       user: {
         columns: {
+          id: true,
           username: true,
-          email: true,
         },
       },
     },
@@ -64,9 +64,8 @@ export default defineEventHandler(async (event) => {
     body.status !== current.status &&
     (body.status === "approved" || body.status === "rejected")
   ) {
-    await sendAchievementReviewEmail({
-      email: current.user.email,
-      username: current.user.username,
+    await createAchievementReviewNotification({
+      userId: current.user.id,
       recordTypeLabel: "大创",
       recordName: updated.name,
       status: body.status,

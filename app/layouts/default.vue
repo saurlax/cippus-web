@@ -18,6 +18,7 @@ const navItems = computed(() => {
     },
   ];
   if (user.value) {
+    links.push({ label: "站内信", to: "/notifications" });
     links.push({ label: "个人资料", to: `/users/${user.value?.username}` });
   }
   if (user.value?.admin) {

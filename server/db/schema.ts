@@ -174,6 +174,27 @@ export const notices = pgTable("notices", {
     .$onUpdate(() => new Date()),
 });
 
+export const userNotifications = pgTable(
+  "user_notifications",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    category: text("category"),
+    readAt: timestamp("read_at", { mode: "date" }),
+    createdAt: timestamp("created_at", { mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index("user_notifications_user_id_idx").on(table.userId),
+  }),
+);
+
 export const contests = pgTable("contests", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -403,6 +424,20 @@ export const applicationItemsRelations = relations(
     application: one(applications, {
       fields: [applicationItems.applicationId],
       references: [applications.id],
+    }),
+  }),
+);
+
+export const usersRelations = relations(users, ({ many }) => ({
+  notifications: many(userNotifications),
+}));
+
+export const userNotificationsRelations = relations(
+  userNotifications,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userNotifications.userId],
+      references: [users.id],
     }),
   }),
 );

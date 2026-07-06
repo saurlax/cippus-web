@@ -1110,7 +1110,7 @@ async function saveRecordDraft() {
             color="neutral"
             variant="ghost"
             label="取消"
-            @click="openEdit = false"
+            @click="() => { openEdit = false }"
           />
           <UButton :loading="saving" label="保存" @click="saveProfile" />
         </div>
@@ -1181,7 +1181,7 @@ async function saveRecordDraft() {
             color="neutral"
             variant="ghost"
             label="取消"
-            @click="openAward = false"
+            @click="() => { openAward = false }"
           />
           <UButton
             v-if="!selectedAward"
@@ -1262,7 +1262,7 @@ async function saveRecordDraft() {
             color="neutral"
             variant="ghost"
             label="取消"
-            @click="openRecord = false"
+            @click="() => { openRecord = false }"
           />
           <UButton
             v-if="!selectedRecordId"

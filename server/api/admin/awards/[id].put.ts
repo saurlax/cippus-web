@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import { z } from "zod";
-import { sendAchievementReviewEmail } from "~~/server/utils/review-email";
+import { createAchievementReviewNotification } from "~~/server/utils/notifications";
 
 const updateSchema = z.object({
   status: z.enum(reviewStatusValues).optional(),
@@ -21,8 +21,8 @@ export default defineEventHandler(async (event) => {
       contest: true,
       user: {
         columns: {
+          id: true,
           username: true,
-          email: true,
         },
       },
     },
@@ -43,9 +43,8 @@ export default defineEventHandler(async (event) => {
     body.status !== current.status &&
     (body.status === "approved" || body.status === "rejected")
   ) {
-    await sendAchievementReviewEmail({
-      email: current.user.email,
-      username: current.user.username,
+    await createAchievementReviewNotification({
+      userId: current.user.id,
       recordTypeLabel: "奖项",
       recordName: current.contest?.title || `奖项 #${current.id}`,
       status: body.status,

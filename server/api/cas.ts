@@ -26,12 +26,26 @@ export default defineEventHandler(async (event) => {
     const sessionName = name ?? user?.name ?? null;
     const sessionAdmin = user?.admin ?? false;
 
-    if (!user) {
-      await db.insert(schema.users).values({ username, name: name ?? null });
+    const sessionUser =
+      user ||
+      (
+        await db
+          .insert(schema.users)
+          .values({ username, name: name ?? null })
+          .returning()
+      )[0];
+
+    if (!sessionUser) {
+      throw createError({ statusCode: 500, statusMessage: "用户创建失败" });
     }
 
     await setUserSession(event, {
-      user: { username, name: sessionName, admin: sessionAdmin },
+      user: {
+        id: sessionUser.id,
+        username,
+        name: sessionName,
+        admin: sessionAdmin,
+      },
     });
     return sendRedirect(event, "/");
   }

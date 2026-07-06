@@ -4,6 +4,7 @@ import {
   activities,
   applications,
   applicationItems,
+  userNotifications,
   awards,
   papers,
   patents,
@@ -26,6 +27,7 @@ export type Contest = typeof contests.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type Application = typeof applications.$inferSelect;
 export type ApplicationItem = typeof applicationItems.$inferSelect;
+export type UserNotification = typeof userNotifications.$inferSelect;
 export type Award = typeof awards.$inferSelect;
 export type Paper = typeof papers.$inferSelect;
 export type Patent = typeof patents.$inferSelect;
@@ -36,6 +38,7 @@ export type NewContest = typeof contests.$inferInsert;
 export type NewActivity = typeof activities.$inferInsert;
 export type NewApplication = typeof applications.$inferInsert;
 export type NewApplicationItem = typeof applicationItems.$inferInsert;
+export type NewUserNotification = typeof userNotifications.$inferInsert;
 export type NewAward = typeof awards.$inferInsert;
 export type NewPaper = typeof papers.$inferInsert;
 export type NewPatent = typeof patents.$inferInsert;

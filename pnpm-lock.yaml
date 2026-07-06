@@ -32,9 +32,6 @@ importers:
       drizzle-orm:
         specifier: ^0.45.1
         version: 0.45.1(@cloudflare/workers-types@4.20260305.1)(@electric-sql/pglite@0.3.16)(postgres@3.4.8)
-      nodemailer:
-        specifier: ^7.0.6
-        version: 7.0.6
       nuxt:
         specifier: ^4.3.1
         version: 4.3.1(@electric-sql/pglite@0.3.16)(@netlify/blobs@9.1.2)(@parcel/watcher@2.5.1)(@types/node@24.0.14)(@vue/compiler-sfc@3.5.30)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.16)(drizzle-orm@0.45.1(@cloudflare/workers-types@4.20260305.1)(@electric-sql/pglite@0.3.16)(postgres@3.4.8)))(drizzle-orm@0.45.1(@cloudflare/workers-types@4.20260305.1)(@electric-sql/pglite@0.3.16)(postgres@3.4.8))(eslint@10.0.2(jiti@2.6.1))(ioredis@5.10.0)(lightningcss@1.31.1)(magicast@0.5.1)(optionator@0.9.4)(rolldown@1.0.0-beta.57)(rollup@4.59.0)(terser@5.43.1)(typescript@5.9.3)(vite@7.3.1(@types/node@24.0.14)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.43.1)(yaml@2.8.2))(yaml@2.8.2)
@@ -56,10 +53,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-    devDependencies:
-      nuxt-nodemailer:
-        specifier: ^1.1.4
-        version: 1.1.4(magicast@0.5.1)(nodemailer@7.0.6)
 
 packages:
 
@@ -2733,9 +2726,6 @@ packages:
   '@types/node@24.0.14':
     resolution: {integrity: sha512-4zXMWD91vBLGRtHK3YbIoFMia+1nqEz72coM42C5ETjnNCa/heoj7NT1G67iAfOqMmcfhuCZ4uNpyz8EjlAejw==}
 
-  '@types/nodemailer@7.0.12':
-    resolution: {integrity: sha512-80vKwiIsVSyFA1rRovH59jNPLBOuc6dRZIHEu40gXTkBkZnQv8vog1xSGEb9j5q/tdMAs5ivvDR2pLTU0hGHXA==}
-
   '@types/pluralize@0.0.33':
     resolution: {integrity: sha512-JOqsl+ZoCpP4e8TDke9W79FDcSgPAR0l6pixx2JHkhnRjvShyYiAYw2LVsnA7K08Y6DeOnaU6ujmENO4os/cYg==}
 
@@ -4988,10 +4978,6 @@ packages:
   node-releases@2.0.27:
     resolution: {integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==}
 
-  nodemailer@7.0.6:
-    resolution: {integrity: sha512-F44uVzgwo49xboqbFgBGkRaiMgtoBrBEWCVincJPK9+S9Adkzt/wXCLKbf7dxucmxfTI5gHGB+bEmdyzN6QKjw==}
-    engines: {node: '>=6.0.0'}
-
   nopt@8.1.0:
     resolution: {integrity: sha512-ieGu42u/Qsa4TFktmaKEwM6MQH0pOWnaB3htzh0JRtx84+Mebc0cbZYN5bC+6WTZ4+77xrL9Pn5m7CV6VIkV7A==}
     engines: {node: ^18.17.0 || >=20.5.0}
@@ -5031,11 +5017,6 @@ packages:
 
   nuxt-define@1.0.0:
     resolution: {integrity: sha512-CYZ2WjU+KCyCDVzjYUM4eEpMF0rkPmkpiFrybTqqQCRpUbPt2h3snswWIpFPXTi+osRCY6Og0W/XLAQgDL4FfQ==}
-
-  nuxt-nodemailer@1.1.4:
-    resolution: {integrity: sha512-nIH9dfQ/Z58QtwspetoHJI+XGNraVBW7setEu0f8EJDTLLh2WRMIZgamVRmrF9d10/POT+fLDmQ2N1QEmUwWuw==}
-    peerDependencies:
-      nodemailer: ^7.0.6
 
   nuxt@4.3.1:
     resolution: {integrity: sha512-bl+0rFcT5Ax16aiWFBFPyWcsTob19NTZaDL5P6t0MQdK63AtgS6fN6fwvwdbXtnTk6/YdCzlmuLzXhSM22h0OA==}
@@ -9279,10 +9260,7 @@ snapshots:
   '@types/node@24.0.14':
     dependencies:
       undici-types: 7.8.0
-
-  '@types/nodemailer@7.0.12':
-    dependencies:
-      '@types/node': 24.0.14
+    optional: true
 
   '@types/pluralize@0.0.33': {}
 
@@ -11892,8 +11870,6 @@ snapshots:
 
   node-releases@2.0.27: {}
 
-  nodemailer@7.0.6: {}
-
   nopt@8.1.0:
     dependencies:
       abbrev: 3.0.1
@@ -11932,14 +11908,6 @@ snapshots:
       - magicast
 
   nuxt-define@1.0.0: {}
-
-  nuxt-nodemailer@1.1.4(magicast@0.5.1)(nodemailer@7.0.6):
-    dependencies:
-      '@nuxt/kit': 3.20.0(magicast@0.5.1)
-      '@types/nodemailer': 7.0.12
-      nodemailer: 7.0.6
-    transitivePeerDependencies:
-      - magicast
 
   nuxt@4.3.1(@electric-sql/pglite@0.3.16)(@netlify/blobs@9.1.2)(@parcel/watcher@2.5.1)(@types/node@24.0.14)(@vue/compiler-sfc@3.5.30)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.16)(drizzle-orm@0.45.1(@cloudflare/workers-types@4.20260305.1)(@electric-sql/pglite@0.3.16)(postgres@3.4.8)))(drizzle-orm@0.45.1(@cloudflare/workers-types@4.20260305.1)(@electric-sql/pglite@0.3.16)(postgres@3.4.8))(eslint@10.0.2(jiti@2.6.1))(ioredis@5.10.0)(lightningcss@1.31.1)(magicast@0.5.1)(optionator@0.9.4)(rolldown@1.0.0-beta.57)(rollup@4.59.0)(terser@5.43.1)(typescript@5.9.3)(vite@7.3.1(@types/node@24.0.14)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.43.1)(yaml@2.8.2))(yaml@2.8.2):
     dependencies:
@@ -13399,7 +13367,8 @@ snapshots:
       magic-string: 0.30.21
       unplugin: 2.3.11
 
-  undici-types@7.8.0: {}
+  undici-types@7.8.0:
+    optional: true
 
   unenv@2.0.0-rc.24:
     dependencies:
