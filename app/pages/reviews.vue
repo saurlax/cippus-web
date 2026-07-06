@@ -4,7 +4,11 @@ const toast = useToast();
 const { t } = useI18n();
 
 const username = computed(() => sessionUser.value?.username || "");
-const activeKind = ref<"award" | "paper" | "patent" | "innovation">("award");
+const formKind = ref<"award" | "paper" | "patent" | "innovation">("award");
+const kindFilter = ref("all");
+const statusFilter = ref("all");
+const searchText = ref("");
+const formModalOpen = ref(false);
 const saving = ref(false);
 
 const { data: contests } = await useFetch("/api/contests");
@@ -27,6 +31,15 @@ type PatentRecord = NonNullable<typeof patents.value>[number];
 type InnovationRecord = NonNullable<typeof innovations.value>[number];
 type SourceRecord = AwardRecord | PaperRecord | PatentRecord;
 type EditableRecord = AwardRecord | PaperRecord | PatentRecord | InnovationRecord;
+type AchievementKind = "award" | "paper" | "patent" | "innovation";
+type TableRecord = EditableRecord & {
+  achievementKind: AchievementKind;
+  achievementLabel: string;
+  titleText: string;
+  typeText: string;
+  dateText: string;
+  statusText: string;
+};
 
 const selectedRecord = ref<EditableRecord>();
 const uploadFiles = ref<File[]>([]);
@@ -49,6 +62,14 @@ const kindItems = [
   { label: "专利", value: "patent" },
   { label: "大创", value: "innovation" },
 ];
+const kindFilterItems = [{ label: "全部类型", value: "all" }, ...kindItems];
+const statusFilterItems = computed(() => [
+  { label: "全部状态", value: "all" },
+  ...["pending", "approved", "rejected", "draft"].map((value) => ({
+    label: t(`awards.status.${value}`),
+    value,
+  })),
+]);
 const contestItems = computed(() =>
   (contests.value || []).map((contest: any) => ({
     label: contest.title,
@@ -84,21 +105,8 @@ const awardsList = computed(() => awards.value || []);
 const papersList = computed(() => papers.value || []);
 const patentsList = computed(() => patents.value || []);
 const innovationsList = computed(() => innovations.value || []);
-const currentList = computed(() => {
-  switch (activeKind.value) {
-    case "award":
-      return awardsList.value;
-    case "paper":
-      return papersList.value;
-    case "patent":
-      return patentsList.value;
-    case "innovation":
-      return innovationsList.value;
-  }
-});
-const currentTitle = computed(() => kindItems.find((item) => item.value === activeKind.value)?.label || "成果");
 const currentTypeItems = computed(() => {
-  switch (activeKind.value) {
+  switch (formKind.value) {
     case "award":
       return awardTypeItems;
     case "paper":
@@ -109,6 +117,14 @@ const currentTypeItems = computed(() => {
       return innovationTypeItems;
   }
 });
+const pageLinks = computed(() => [
+  {
+    label: "添加成果",
+    icon: "i-lucide-plus",
+    onClick: openCreateModal,
+  },
+]);
+
 const sourceItems = computed(() => {
   if (!form.sourceType) {
     return [];
@@ -129,6 +145,45 @@ const sourceItems = computed(() => {
 });
 
 const isSupplementMode = computed(() => selectedRecord.value?.status === "approved");
+
+const columns = [
+  { accessorKey: "achievementLabel", header: "类型" },
+  { accessorKey: "titleText", header: "成果" },
+  { accessorKey: "typeText", header: "分类" },
+  { accessorKey: "dateText", header: "时间" },
+  { accessorKey: "statusText", header: "状态" },
+  { accessorKey: "updatedAt", header: "更新时间" },
+  { id: "actions", header: "操作" },
+];
+
+const tableData = computed<TableRecord[]>(() => {
+  const rows = [
+    ...toTableRecords("award", awardsList.value),
+    ...toTableRecords("paper", papersList.value),
+    ...toTableRecords("patent", patentsList.value),
+    ...toTableRecords("innovation", innovationsList.value),
+  ];
+  const keyword = searchText.value.trim().toLowerCase();
+
+  return rows.filter((item) => {
+    if (kindFilter.value !== "all" && item.achievementKind !== kindFilter.value) {
+      return false;
+    }
+
+    if (statusFilter.value !== "all" && item.status !== statusFilter.value) {
+      return false;
+    }
+
+    if (!keyword) {
+      return true;
+    }
+
+    return [item.titleText, item.typeText, item.statusText]
+      .join(" ")
+      .toLowerCase()
+      .includes(keyword);
+  });
+});
 
 function normalizeDateText(value: unknown) {
   if (!value) return "";
@@ -151,6 +206,20 @@ function getRecordTitle(kind: "award" | "paper" | "patent" | "innovation", item:
   }
 
   return item.name || `成果 #${item.id}`;
+}
+
+function toTableRecords(kind: AchievementKind, records: EditableRecord[]): TableRecord[] {
+  const achievementLabel = kindItems.find((item) => item.value === kind)?.label || "成果";
+
+  return records.map((item: any) => ({
+    ...item,
+    achievementKind: kind,
+    achievementLabel,
+    titleText: getRecordTitle(kind, item),
+    typeText: getTypeText(kind, item),
+    dateText: normalizeDateText(item.date),
+    statusText: t(`awards.status.${item.status}`),
+  }));
 }
 
 function getTypeText(kind: "award" | "paper" | "patent" | "innovation", item: any) {
@@ -197,7 +266,15 @@ function resetForm() {
   form.evidences = [];
 }
 
-function editRecord(item: EditableRecord) {
+function openCreateModal() {
+  resetForm();
+  const selectedFilter = kindFilter.value as AchievementKind;
+  formKind.value = kindFilter.value === "all" ? "award" : selectedFilter;
+  formModalOpen.value = true;
+}
+
+function editRecord(item: TableRecord) {
+  formKind.value = item.achievementKind;
   selectedRecord.value = item;
   uploadFiles.value = [];
   form.contestId = (item as any).contestId;
@@ -212,6 +289,7 @@ function editRecord(item: EditableRecord) {
   memberTags.value = Array.isArray((item as any).members) && (item as any).members.length
     ? [...((item as any).members as string[])]
     : defaultMembers();
+  formModalOpen.value = true;
 }
 
 async function uploadEvidences(files: File[]) {
@@ -234,7 +312,7 @@ function removeEvidence(index: number) {
 }
 
 function pathForKind() {
-  switch (activeKind.value) {
+  switch (formKind.value) {
     case "award":
       return "awards";
     case "paper":
@@ -247,7 +325,7 @@ function pathForKind() {
 }
 
 async function refreshCurrentList() {
-  switch (activeKind.value) {
+  switch (formKind.value) {
     case "award":
       await refreshAwards();
       return;
@@ -263,17 +341,17 @@ async function refreshCurrentList() {
 }
 
 function validateCoreForm() {
-  if (activeKind.value === "award" && (!form.contestId || !form.level || !form.type)) {
+  if (formKind.value === "award" && (!form.contestId || !form.level || !form.type)) {
     toast.add({ title: "请完整填写奖项信息", color: "warning" });
     return false;
   }
 
-  if (activeKind.value !== "award" && (!form.name.trim() || !form.type)) {
+  if (formKind.value !== "award" && (!form.name.trim() || !form.type)) {
     toast.add({ title: "请完整填写成果信息", color: "warning" });
     return false;
   }
 
-  if (activeKind.value === "innovation" && (!form.sourceType || !form.sourceId)) {
+  if (formKind.value === "innovation" && (!form.sourceType || !form.sourceId)) {
     toast.add({ title: "请选择大创关联成果", color: "warning" });
     return false;
   }
@@ -303,7 +381,7 @@ async function saveRecord(status: "draft" | "pending" = "pending") {
     const evidenceBody = isSupplementMode.value
       ? uploaded
       : [...form.evidences, ...uploaded];
-    const coreBody = activeKind.value === "award"
+    const coreBody = formKind.value === "award"
       ? {
           contestId: form.contestId,
           level: form.level,
@@ -341,6 +419,7 @@ async function saveRecord(status: "draft" | "pending" = "pending") {
     }
 
     toast.add({ title: isSupplementMode.value ? "补充材料已提交" : "成果已保存", color: "success" });
+    formModalOpen.value = false;
     resetForm();
     await refreshCurrentList();
   } catch (e: any) {
@@ -355,18 +434,64 @@ async function saveRecord(status: "draft" | "pending" = "pending") {
   }
 }
 
-watch(activeKind, () => resetForm());
+watch(formKind, () => resetForm());
 </script>
 
 <template>
   <UContainer>
-    <UPageHeader title="奖项审核" description="提交成果审核，或为已通过成果补充证书日期和佐证材料。" />
+    <UPageHeader
+      title="奖项审核"
+      description="提交成果审核，或为已通过成果补充证书日期和佐证材料。"
+      :links="pageLinks"
+    />
     <UPageBody>
-      <UTabs v-model="activeKind" :items="kindItems" class="mb-6" />
+      <div class="space-y-4">
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <UInput
+            v-model="searchText"
+            class="sm:max-w-xs"
+            icon="i-lucide-search"
+            placeholder="搜索成果"
+          />
+          <USelect v-model="kindFilter" :items="kindFilterItems" class="sm:w-40" />
+          <USelect v-model="statusFilter" :items="statusFilterItems" class="sm:w-40" />
+        </div>
 
-      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <UPageCard :title="`${selectedRecord ? '编辑' : '新增'}${currentTitle}`">
+        <UTable :data="tableData" :columns>
+          <template #achievementLabel-cell="{ row }">
+            <UBadge variant="subtle">{{ row.original.achievementLabel }}</UBadge>
+          </template>
+          <template #statusText-cell="{ row }">
+            <UBadge :color="statusColor(row.original.status)" variant="outline">
+              {{ row.original.statusText }}
+            </UBadge>
+          </template>
+          <template #updatedAt-cell="{ row }">
+            {{ new Date(row.original.updatedAt).toLocaleString() }}
+          </template>
+          <template #actions-cell="{ row }">
+            <UButton
+              size="sm"
+              variant="ghost"
+              color="neutral"
+              icon="i-lucide-edit"
+              :label="row.original.status === 'approved' ? '补充材料' : '编辑'"
+              @click="editRecord(row.original)"
+            />
+          </template>
+        </UTable>
+        <UEmpty v-if="!tableData.length" variant="naked" title="暂无记录" />
+      </div>
+
+      <UModal
+        v-model:open="formModalOpen"
+        :title="`${selectedRecord ? (isSupplementMode ? '补充' : '编辑') : '添加'}成果`"
+      >
+        <template #body>
           <UForm class="space-y-4" @submit.prevent="saveRecord('pending')">
+            <UFormField v-if="!selectedRecord" label="成果类型" name="achievementType" required>
+              <USelect v-model="formKind" :items="kindItems" class="w-full" />
+            </UFormField>
             <UAlert
               v-if="isSupplementMode"
               color="success"
@@ -374,7 +499,7 @@ watch(activeKind, () => resetForm());
               title="已通过审核的成果核心信息已锁定"
               description="这里只会追加证书日期和新的佐证材料，不会改变积分申报使用的计分字段。"
             />
-            <template v-if="activeKind === 'award' && !isSupplementMode">
+            <template v-if="formKind === 'award' && !isSupplementMode">
               <UFormField label="比赛" name="contestId" required>
                 <USelect v-model="form.contestId" :items="contestItems" class="w-full" />
               </UFormField>
@@ -382,7 +507,7 @@ watch(activeKind, () => resetForm());
                 <USelect v-model="form.level" :items="awardLevelItems" class="w-full" />
               </UFormField>
             </template>
-            <template v-if="activeKind !== 'award' && !isSupplementMode">
+            <template v-if="formKind !== 'award' && !isSupplementMode">
               <UFormField label="名称" name="name" required>
                 <UInput v-model="form.name" class="w-full" />
               </UFormField>
@@ -390,7 +515,7 @@ watch(activeKind, () => resetForm());
             <UFormField v-if="!isSupplementMode" label="类型" name="type" required>
               <USelect v-model="form.type" :items="currentTypeItems" class="w-full" />
             </UFormField>
-            <template v-if="activeKind === 'innovation' && !isSupplementMode">
+            <template v-if="formKind === 'innovation' && !isSupplementMode">
               <UFormField label="成果类型" name="sourceType" required>
                 <USelect
                   v-model="form.sourceType"
@@ -420,63 +545,21 @@ watch(activeKind, () => resetForm());
               />
             </UFormField>
           </UForm>
-          <template #footer>
-            <div class="flex w-full justify-end gap-2">
-              <UButton color="neutral" variant="ghost" label="清空" @click="resetForm" />
-              <UButton
-                v-if="!selectedRecord"
-                :loading="saving"
-                variant="outline"
-                label="保存草稿"
-                @click="saveRecord('draft')"
-              />
-              <UButton :loading="saving" label="提交" @click="saveRecord('pending')" />
-            </div>
-          </template>
-        </UPageCard>
-
-        <div class="space-y-3">
-          <UPageCard
-            v-for="item in currentList"
-            :key="item.id"
-            :title="getRecordTitle(activeKind, item)"
-          >
-            <template #description>
-              <div class="space-y-3">
-                <div class="flex flex-wrap gap-1">
-                  <UBadge>{{ getTypeText(activeKind, item) }}</UBadge>
-                  <UBadge :color="statusColor(item.status)" variant="outline">
-                    {{ t(`awards.status.${item.status}`) }}
-                  </UBadge>
-                  <UBadge v-if="item.certificateDate" color="neutral" variant="outline">
-                    证书 {{ normalizeDateText(item.certificateDate) }}
-                  </UBadge>
-                </div>
-                <div v-if="reviewTimeline(item).length" class="space-y-2">
-                  <p class="text-sm font-medium text-error">拒绝理由</p>
-                  <div
-                    v-for="notification in reviewTimeline(item)"
-                    :key="notification.id"
-                    class="rounded-md border border-error/20 p-2 text-sm"
-                  >
-                    <p>{{ notification.reason }}</p>
-                    <p class="mt-1 text-xs text-muted">
-                      {{ new Date(notification.createdAt).toLocaleString() }}
-                    </p>
-                  </div>
-                </div>
-                <UButton
-                  size="sm"
-                  variant="outline"
-                  :label="item.status === 'approved' ? '补充材料' : '编辑'"
-                  @click="editRecord(item)"
-                />
-              </div>
-            </template>
-          </UPageCard>
-          <UEmpty v-if="!currentList.length" variant="naked" title="暂无记录" />
-        </div>
-      </div>
+        </template>
+        <template #footer>
+          <div class="flex w-full justify-end gap-2">
+            <UButton color="neutral" variant="ghost" label="清空" @click="resetForm" />
+            <UButton
+              v-if="!selectedRecord"
+              :loading="saving"
+              variant="outline"
+              label="保存草稿"
+              @click="saveRecord('draft')"
+            />
+            <UButton :loading="saving" label="提交" @click="saveRecord('pending')" />
+          </div>
+        </template>
+      </UModal>
     </UPageBody>
   </UContainer>
 </template>
