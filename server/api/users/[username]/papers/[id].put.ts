@@ -6,6 +6,7 @@ const updateSchema = z.object({
   name: z.string().trim().min(1).optional(),
   type: z.enum(paperTypeValues).optional(),
   date: z.coerce.date().optional(),
+  certificateDate: z.coerce.date().nullable().optional(),
   members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
   status: z.enum(["draft", "pending"]).optional(),

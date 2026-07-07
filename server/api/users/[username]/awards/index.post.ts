@@ -7,6 +7,7 @@ const createSchema = z.object({
   level: z.enum(awardLevelValues),
   type: z.enum(awardTypeValues),
   date: z.coerce.date(),
+  certificateDate: z.coerce.date().nullable().optional(),
   members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
   status: z.enum(["draft", "pending"]).optional(),

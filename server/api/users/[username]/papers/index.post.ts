@@ -6,6 +6,7 @@ const createSchema = z.object({
   name: z.string().trim().min(1),
   type: z.enum(paperTypeValues),
   date: z.coerce.date(),
+  certificateDate: z.coerce.date().nullable().optional(),
   members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
   status: z.enum(["draft", "pending"]).optional(),

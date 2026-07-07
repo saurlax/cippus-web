@@ -222,6 +222,10 @@ function toTableRecords(kind: AchievementKind, records: EditableRecord[]): Table
   }));
 }
 
+function isRecordOwner(item: EditableRecord) {
+  return item.userId === sessionUser.value?.id;
+}
+
 function getTypeText(kind: "award" | "paper" | "patent" | "innovation", item: any) {
   if (kind === "award") {
     return `${t(`awards.level.${item.level}`)} / ${t(`awards.type.${item.type}`)}`;
@@ -274,6 +278,11 @@ function openCreateModal() {
 }
 
 function editRecord(item: TableRecord) {
+  if (!isRecordOwner(item)) {
+    toast.add({ title: "成员无法修改成果", color: "warning" });
+    return;
+  }
+
   if (item.status !== "draft") {
     toast.add({ title: "只能编辑草稿状态的成果", color: "warning" });
     return;
@@ -411,6 +420,7 @@ async function saveRecord(status: "draft" | "pending" = "pending") {
           level: form.level,
           type: form.type,
           date: form.date,
+          certificateDate: form.certificateDate || null,
           members: normalizeMembersList(memberTags.value),
           evidences: evidenceBody,
           status,
@@ -421,6 +431,7 @@ async function saveRecord(status: "draft" | "pending" = "pending") {
           sourceType: form.sourceType,
           sourceId: form.sourceId,
           date: form.date,
+          certificateDate: form.certificateDate || null,
           members: normalizeMembersList(memberTags.value),
           evidences: evidenceBody,
           status,
@@ -456,6 +467,10 @@ async function saveRecord(status: "draft" | "pending" = "pending") {
 
 async function revertToDraft(item: TableRecord) {
   if (revertingId.value) return;
+  if (!isRecordOwner(item)) {
+    toast.add({ title: "成员无法修改成果", color: "warning" });
+    return;
+  }
 
   try {
     revertingId.value = item.id;
@@ -479,6 +494,11 @@ async function revertToDraft(item: TableRecord) {
 
 async function deleteRecord(item: TableRecord) {
   if (deletingId.value) return;
+  if (!isRecordOwner(item)) {
+    toast.add({ title: "成员无法修改成果", color: "warning" });
+    return;
+  }
+
   if (item.status !== "draft") {
     toast.add({ title: "只能删除草稿状态的成果", color: "warning" });
     return;
@@ -557,7 +577,7 @@ watch(formKind, () => resetForm());
           <template #actions-cell="{ row }">
             <div class="flex gap-1">
               <UButton
-                v-if="row.original.status === 'draft'"
+                v-if="isRecordOwner(row.original) && row.original.status === 'draft'"
                 size="sm"
                 variant="ghost"
                 color="neutral"
@@ -566,7 +586,7 @@ watch(formKind, () => resetForm());
                 @click="editRecord(row.original)"
               />
               <UButton
-                v-if="row.original.status === 'draft'"
+                v-if="isRecordOwner(row.original) && row.original.status === 'draft'"
                 size="sm"
                 variant="ghost"
                 color="error"
@@ -576,7 +596,7 @@ watch(formKind, () => resetForm());
                 @click="deleteRecord(row.original)"
               />
               <UButton
-                v-if="row.original.status === 'pending'"
+                v-if="isRecordOwner(row.original) && row.original.status === 'pending'"
                 size="sm"
                 variant="ghost"
                 color="warning"
@@ -585,6 +605,9 @@ watch(formKind, () => resetForm());
                 :loading="revertingId === row.original.id"
                 @click="revertToDraft(row.original)"
               />
+              <span v-if="!isRecordOwner(row.original)" class="text-sm text-muted">
+                成员无法修改成果
+              </span>
             </div>
           </template>
         </UTable>
@@ -629,10 +652,13 @@ watch(formKind, () => resetForm());
                 <USelect v-model="form.sourceId" :items="sourceItems" class="w-full" />
               </UFormField>
             </template>
-            <UFormField label="时间" name="date" required>
+            <UFormField label="获奖时间" name="date" required>
               <UInput v-model="form.date" class="w-full" type="date" />
             </UFormField>
-            <UFormField label="成员排序" name="members">
+            <UFormField label="证书时间" name="certificateDate">
+              <UInput v-model="form.certificateDate" class="w-full" type="date" />
+            </UFormField>
+            <UFormField label="成员排序（输入学号后点击回车保存）" name="members">
               <UInputTags v-model="memberTags" class="w-full" />
             </UFormField>
             <UFormField label="佐证材料" name="evidences">

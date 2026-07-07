@@ -10,6 +10,7 @@ const updateSchema = z.object({
   sourceType: z.enum(innovationAchievementTypeValues).optional(),
   sourceId: z.coerce.number().int().positive().optional(),
   date: z.coerce.date().optional(),
+  certificateDate: z.coerce.date().nullable().optional(),
   members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
   status: z.enum(["draft", "pending"]).optional(),

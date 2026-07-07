@@ -9,6 +9,7 @@ const createSchema = z.object({
   sourceType: z.enum(innovationAchievementTypeValues),
   sourceId: z.coerce.number().int().positive(),
   date: z.coerce.date(),
+  certificateDate: z.coerce.date().nullable().optional(),
   members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
   status: z.enum(["draft", "pending"]).optional(),
