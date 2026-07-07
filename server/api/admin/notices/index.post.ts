@@ -1,7 +1,14 @@
 import { db, schema } from "@nuxthub/db";
+import { z } from "zod";
+
+const createSchema = z.object({
+  title: z.string().trim().min(1),
+  content: z.string().trim().min(1),
+  category: z.string().trim().nullable().optional(),
+});
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event);
+  const body = createSchema.parse(await readBody(event));
 
   const [notice] = await db
     .insert(schema.notices)

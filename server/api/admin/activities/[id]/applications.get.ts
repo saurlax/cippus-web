@@ -19,7 +19,13 @@ export default defineEventHandler(async (event) => {
   const applications = await db.query.applications.findMany({
     where: eq(schema.applications.activityId, activityId),
     with: {
-      user: true,
+      user: {
+        columns: {
+          id: true,
+          username: true,
+          name: true,
+        },
+      },
       items: true,
     },
     orderBy: desc(schema.applications.effectiveTotalScore),

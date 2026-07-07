@@ -8,7 +8,13 @@ export default defineEventHandler(async (event) => {
 
   const patents = await db.query.patents.findMany({
     with: {
-      user: true,
+      user: {
+        columns: {
+          id: true,
+          username: true,
+          name: true,
+        },
+      },
     },
     orderBy: schema.patents.updatedAt,
     where,

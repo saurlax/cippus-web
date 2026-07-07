@@ -42,7 +42,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const session = await getUserSession(event);
-  const canViewAll = session.user?.username === username;
+  const isOwner = session.user?.username === username;
+  const canViewAll = isOwner || !!session.user?.admin;
   const displayIds = (user.displayAchievements?.award || []).filter(Number.isInteger);
 
   if (!canViewAll && !displayIds.length) {
@@ -63,5 +64,5 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  return await attachReviewNotifications(user.id, awards);
+  return isOwner ? await attachReviewNotifications(user.id, awards) : awards;
 });

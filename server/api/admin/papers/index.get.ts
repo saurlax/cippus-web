@@ -8,7 +8,13 @@ export default defineEventHandler(async (event) => {
 
   const papers = await db.query.papers.findMany({
     with: {
-      user: true,
+      user: {
+        columns: {
+          id: true,
+          username: true,
+          name: true,
+        },
+      },
     },
     orderBy: schema.papers.updatedAt,
     where,

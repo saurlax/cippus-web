@@ -36,7 +36,13 @@ export default defineEventHandler(async (event) => {
           eq(schema.applications.userId, currentUser.id),
         ),
     with: {
-      user: true,
+      user: {
+        columns: {
+          id: true,
+          username: true,
+          name: true,
+        },
+      },
       items: true,
     },
     orderBy: desc(schema.applications.effectiveTotalScore),

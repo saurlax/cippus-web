@@ -8,7 +8,6 @@ const updateSchema = z.object({
   date: z.coerce.date().optional(),
   members: z.array(z.string().trim().min(1)).optional(),
   evidences: z.array(z.string().min(1)).optional(),
-  certificateDate: z.coerce.date().optional(),
   status: z.enum(["draft", "pending"]).optional(),
 });
 

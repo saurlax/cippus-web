@@ -1,8 +1,14 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  username: z.string().trim().min(1),
+  password: z.string().min(1),
+});
 
 export default defineEventHandler(async (event) => {
-  const { username, password } = await readBody(event);
+  const { username, password } = loginSchema.parse(await readBody(event));
   const user = await db.query.users.findFirst({
     where: eq(schema.users.username, username),
   });

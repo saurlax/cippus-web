@@ -1,15 +1,20 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
+import { z } from "zod";
 
-type UpdateProfileBody = {
-  name?: unknown;
-  bio?: unknown;
-  email?: unknown;
-  gender?: unknown;
-  college?: unknown;
-  password?: unknown;
-  displayAchievements?: unknown;
-};
+const displayAchievementsSchema = z
+  .record(z.string(), z.array(z.coerce.number().int().positive()))
+  .optional();
+
+const updateProfileSchema = z.object({
+  name: z.string().optional(),
+  bio: z.string().optional(),
+  email: z.string().optional(),
+  gender: z.enum(["male", "female"]).nullable().optional(),
+  college: z.string().optional(),
+  password: z.string().optional(),
+  displayAchievements: displayAchievementsSchema,
+});
 
 const achievementKeys = new Set(["award", "paper", "patent", "innovation"]);
 
@@ -22,30 +27,19 @@ function toNullableText(value: unknown) {
   return normalized.length > 0 ? normalized : null;
 }
 
-function toNullableGender(value: unknown): "male" | "female" | null {
-  if (typeof value !== "string") return null;
-  const v = value.trim().toLowerCase();
-  if (v === "male" || v === "female") return v as "male" | "female";
-  return null;
-}
-
-function normalizeDisplayAchievements(value: unknown) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+function normalizeDisplayAchievements(
+  value: z.infer<typeof displayAchievementsSchema>,
+) {
+  if (!value) {
     return undefined;
   }
 
   return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .filter(([key, ids]) => achievementKeys.has(key) && Array.isArray(ids))
+    Object.entries(value)
+      .filter(([key]) => achievementKeys.has(key))
       .map(([key, ids]) => [
         key,
-        Array.from(
-          new Set(
-            (ids as unknown[])
-              .map((id) => Number(id))
-              .filter((id) => Number.isInteger(id) && id > 0),
-          ),
-        ),
+        Array.from(new Set(ids)),
       ]),
   );
 }
@@ -54,14 +48,14 @@ export default defineEventHandler(async (event) => {
   const { user } = await requireUserSession(event);
   const username = user.username;
 
-  const body = await readBody<UpdateProfileBody>(event);
+  const body = updateProfileSchema.parse(await readBody(event));
   const nextPassword = typeof body.password === "string" ? body.password.trim() : "";
   const displayAchievements = normalizeDisplayAchievements(body.displayAchievements);
   const updateBody = {
     ...("name" in body ? { name: toNullableText(body.name) } : {}),
     ...("bio" in body ? { bio: toNullableText(body.bio) } : {}),
     ...("email" in body ? { email: toNullableText(body.email) } : {}),
-    ...("gender" in body ? { gender: toNullableGender(body.gender) } : {}),
+    ...("gender" in body ? { gender: body.gender } : {}),
     ...("college" in body ? { college: toNullableText(body.college) } : {}),
     ...(nextPassword ? { password: await hashPassword(nextPassword) } : {}),
     ...(displayAchievements ? { displayAchievements } : {}),

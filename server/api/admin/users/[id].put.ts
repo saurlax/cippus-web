@@ -1,21 +1,32 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
+import { z } from "zod";
+
+const updateSchema = z.object({
+  username: z.string().trim().min(1).optional(),
+  password: z.string().optional(),
+  name: z.string().trim().nullable().optional(),
+  email: z.string().trim().nullable().optional(),
+  gender: z.enum(["male", "female"]).nullable().optional(),
+  college: z.string().trim().nullable().optional(),
+  admin: z.boolean().optional(),
+});
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, "id"));
-  const body = await readBody(event);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw createError({ statusCode: 400, statusMessage: "用户 ID 非法" });
+  }
+
+  const body = updateSchema.parse(await readBody(event));
   const nextPassword = typeof body.password === "string" ? body.password.trim() : "";
+  const { password: _password, ...userBody } = body;
 
   const [updated] = await db
     .update(schema.users)
     .set({
-      username: body.username,
+      ...userBody,
       ...(nextPassword ? { password: await hashPassword(nextPassword) } : {}),
-      name: body.name,
-      email: body.email,
-      gender: body.gender,
-      college: body.college,
-      admin: body.admin,
     })
     .where(eq(schema.users.id, id))
     .returning({ id: schema.users.id });

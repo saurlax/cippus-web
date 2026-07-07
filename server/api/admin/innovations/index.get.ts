@@ -9,7 +9,15 @@ export default defineEventHandler(async (event) => {
       : eq(schema.innovations.status, query.status);
 
   const innovations = await db.query.innovations.findMany({
-    with: { user: true },
+    with: {
+      user: {
+        columns: {
+          id: true,
+          username: true,
+          name: true,
+        },
+      },
+    },
     orderBy: schema.innovations.updatedAt,
     where,
     limit: query.search ? undefined : query.pageSize,

@@ -9,7 +9,13 @@ export default defineEventHandler(async (event) => {
   const awards = await db.query.awards.findMany({
     with: {
       contest: true,
-      user: true,
+      user: {
+        columns: {
+          id: true,
+          username: true,
+          name: true,
+        },
+      },
     },
     orderBy: schema.awards.updatedAt,
     where,

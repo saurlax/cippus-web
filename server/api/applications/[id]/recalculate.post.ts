@@ -13,7 +13,11 @@ export default defineEventHandler(async (event) => {
   const application = await db.query.applications.findFirst({
     where: eq(schema.applications.id, applicationId),
     with: {
-      user: true,
+      user: {
+        columns: {
+          username: true,
+        },
+      },
     },
   });
 

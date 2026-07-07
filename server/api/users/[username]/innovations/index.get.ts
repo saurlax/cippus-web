@@ -38,7 +38,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: "User not found" });
   }
 
-  const canViewAll = session.user?.username === username;
+  const isOwner = session.user?.username === username;
+  const canViewAll = isOwner || !!session.user?.admin;
   const displayIds = (user.displayAchievements?.innovation || []).filter(Number.isInteger);
 
   if (!canViewAll && !displayIds.length) {
@@ -56,5 +57,5 @@ export default defineEventHandler(async (event) => {
     orderBy: schema.innovations.updatedAt,
   });
 
-  return await attachReviewNotifications(user.id, innovations);
+  return isOwner ? await attachReviewNotifications(user.id, innovations) : innovations;
 });

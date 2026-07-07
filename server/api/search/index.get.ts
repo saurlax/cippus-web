@@ -1,6 +1,8 @@
 import { desc, ilike, or } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 
+const searchLimit = 50;
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const type = String(query.type || "notices");
@@ -24,10 +26,15 @@ export default defineEventHandler(async (event) => {
             )
           : undefined,
       )
-      .orderBy(desc(schema.contests.createdAt));
+      .orderBy(desc(schema.contests.createdAt))
+      .limit(searchLimit);
   }
 
   if (type === "users") {
+    if (!keyword) {
+      return [];
+    }
+
     return await db
       .select({
         id: schema.users.id,
@@ -46,7 +53,8 @@ export default defineEventHandler(async (event) => {
             )
           : undefined,
       )
-      .orderBy(schema.users.username);
+      .orderBy(schema.users.username)
+      .limit(searchLimit);
   }
 
   return await db
@@ -67,5 +75,6 @@ export default defineEventHandler(async (event) => {
           )
         : undefined,
     )
-    .orderBy(desc(schema.notices.createdAt));
+    .orderBy(desc(schema.notices.createdAt))
+    .limit(searchLimit);
 });
