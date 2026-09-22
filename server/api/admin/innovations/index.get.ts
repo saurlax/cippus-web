@@ -6,7 +6,9 @@ export default defineEventHandler(async (event) => {
   const where =
     query.status === "all"
       ? undefined
-      : eq(schema.innovations.status, query.status);
+      : query.status === "certificate_pending"
+        ? eq(schema.innovations.certificateStatus, "pending")
+        : eq(schema.innovations.status, query.status);
 
   const innovations = await db.query.innovations.findMany({
     with: {

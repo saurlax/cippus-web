@@ -619,14 +619,14 @@ watch(
             placeholder="请输入活动描述"
           />
         </UFormField>
-        <UFormField label="开始日期" name="startDate" required>
+        <UFormField label="开始日期（成就取得的最早时间）" name="startDate" required>
           <UInput
             class="w-full"
             type="date"
             v-model="currentActivity.startDate"
           />
         </UFormField>
-        <UFormField label="结束日期" name="endDate" required>
+        <UFormField label="结束日期（成就取得的最晚时间兼申报截止时间）" name="endDate" required>
           <UInput
             class="w-full"
             type="date"

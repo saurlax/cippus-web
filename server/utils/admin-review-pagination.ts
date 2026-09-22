@@ -4,7 +4,10 @@ export const adminReviewListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
   search: z.string().trim().default(""),
-  status: z.enum(["all", ...reviewStatusValues]).default("all"),
+  // certificate_pending 是按证书补充状态筛选（证书待审），其余按成果本身状态筛选
+  status: z
+    .enum(["all", ...reviewStatusValues, "certificate_pending"])
+    .default("all"),
 });
 
 export const adminReviewStatusLabels: Record<string, string> = {
@@ -12,6 +15,7 @@ export const adminReviewStatusLabels: Record<string, string> = {
   pending: "待审核",
   approved: "通过",
   rejected: "拒绝",
+  certificate_pending: "证书待审",
 };
 
 export const adminAwardLevelLabels: Record<string, string> = {

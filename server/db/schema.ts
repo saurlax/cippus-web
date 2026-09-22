@@ -20,6 +20,16 @@ export const reviewStatusEnum = pgEnum("review_status", [
   "rejected",
 ]);
 
+// 证书补充的独立子状态。与成果本身的 reviewStatus 分离，避免补充证书影响
+// 成果的计分与公开可见性（成果 status 始终保持 approved）。
+// none: 未补充 / pending: 补充待审 / approved: 补充已通过 / rejected: 补充被拒（可重新补充）
+export const certificateStatusEnum = pgEnum("certificate_status", [
+  "none",
+  "pending",
+  "approved",
+  "rejected",
+]);
+
 export const awardLevelEnum = pgEnum("award_level", [
   "national",
   "provincial",
@@ -244,6 +254,10 @@ export const awards = pgTable("awards", {
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull().defaultNow(),
   certificateDate: timestamp("certificate_date", { mode: "date" }),
+  certificateStatus: certificateStatusEnum("certificate_status")
+    .notNull()
+    .default("none"),
+  certificateEvidences: text("certificate_evidences").array().notNull().default([]),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
     .defaultNow()
@@ -265,6 +279,10 @@ export const papers = pgTable("papers", {
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
   certificateDate: timestamp("certificate_date", { mode: "date" }),
+  certificateStatus: certificateStatusEnum("certificate_status")
+    .notNull()
+    .default("none"),
+  certificateEvidences: text("certificate_evidences").array().notNull().default([]),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
     .defaultNow()
@@ -286,6 +304,10 @@ export const patents = pgTable("patents", {
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
   certificateDate: timestamp("certificate_date", { mode: "date" }),
+  certificateStatus: certificateStatusEnum("certificate_status")
+    .notNull()
+    .default("none"),
+  certificateEvidences: text("certificate_evidences").array().notNull().default([]),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
     .defaultNow()
@@ -309,6 +331,10 @@ export const innovations = pgTable("innovations", {
   status: reviewStatusEnum("status").notNull().default("draft"),
   date: timestamp("date", { mode: "date" }).notNull(),
   certificateDate: timestamp("certificate_date", { mode: "date" }),
+  certificateStatus: certificateStatusEnum("certificate_status")
+    .notNull()
+    .default("none"),
+  certificateEvidences: text("certificate_evidences").array().notNull().default([]),
   updatedAt: timestamp("updated_at", { mode: "date" })
     .notNull()
     .defaultNow()

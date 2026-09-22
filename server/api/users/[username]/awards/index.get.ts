@@ -11,6 +11,7 @@ async function attachReviewNotifications(userId: number, awards: any[]) {
     where: and(
       eq(schema.userNotifications.userId, userId),
       eq(schema.userNotifications.resourceType, "award"),
+      eq(schema.userNotifications.category, "review"),
       inArray(schema.userNotifications.resourceId, ids),
     ),
     orderBy: desc(schema.userNotifications.createdAt),

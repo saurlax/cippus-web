@@ -4,7 +4,11 @@ import { db, schema } from "@nuxthub/db";
 export default defineEventHandler(async (event) => {
   const query = adminReviewListQuerySchema.parse(getQuery(event));
   const where =
-    query.status === "all" ? undefined : eq(schema.patents.status, query.status);
+    query.status === "all"
+      ? undefined
+      : query.status === "certificate_pending"
+        ? eq(schema.patents.certificateStatus, "pending")
+        : eq(schema.patents.status, query.status);
 
   const patents = await db.query.patents.findMany({
     with: {

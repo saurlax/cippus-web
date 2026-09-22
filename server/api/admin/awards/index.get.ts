@@ -4,7 +4,11 @@ import { db, schema } from "@nuxthub/db";
 export default defineEventHandler(async (event) => {
   const query = adminReviewListQuerySchema.parse(getQuery(event));
   const where =
-    query.status === "all" ? undefined : eq(schema.awards.status, query.status);
+    query.status === "all"
+      ? undefined
+      : query.status === "certificate_pending"
+        ? eq(schema.awards.certificateStatus, "pending")
+        : eq(schema.awards.status, query.status);
 
   const awards = await db.query.awards.findMany({
     with: {

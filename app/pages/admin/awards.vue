@@ -12,6 +12,7 @@ const statusFilterItems = computed(() => [
     label: t(`status.${value}`),
     value,
   })),
+  { label: "证书待审", value: "certificate_pending" },
 ]);
 
 const { data: awards, refresh } = await useFetch<any>("/api/admin/awards", {
@@ -51,6 +52,19 @@ function formatDateTimeText(value: unknown) {
   }
 
   return new Date(String(value)).toLocaleString();
+}
+
+function statusColor(status: unknown) {
+  switch (String(status ?? "")) {
+    case "pending":
+      return "warning";
+    case "approved":
+      return "success";
+    case "rejected":
+      return "error";
+    default:
+      return "neutral";
+  }
 }
 
 function formatMembersText(members: unknown) {
@@ -103,6 +117,8 @@ const columns = [
 const openModal = ref(false);
 const currentAward = ref<any>({});
 const membersTags = ref<string[]>([]);
+const reviewingCertificate = ref(false);
+const certificateRejectReason = ref("");
 
 function openModalEditor(item?: any) {
   if (item) {
@@ -114,6 +130,9 @@ function openModalEditor(item?: any) {
       date: formatDateText(item.date),
       members: item.members || [],
       evidences: item.evidences || [],
+      certificateStatus: item.certificateStatus || "none",
+      certificateDate: formatDateText(item.certificateDate),
+      certificateEvidences: item.certificateEvidences || [],
       reviewReason: "",
     };
     membersTags.value = normalizeMembersList(item.members as string[]);
@@ -147,6 +166,34 @@ async function editAward() {
 
   closeModal();
   await refresh();
+}
+
+// 审核用户补充的证书材料（只影响 certificateStatus，不影响成果状态）
+async function reviewCertificate(status: "approved" | "rejected") {
+  if (!currentAward.value?.id || reviewingCertificate.value) {
+    return;
+  }
+
+  if (status === "rejected" && !certificateRejectReason.value.trim()) {
+    alert("拒绝补充证书时必须填写理由");
+    return;
+  }
+
+  try {
+    reviewingCertificate.value = true;
+    await $fetch(`/api/admin/awards/${currentAward.value.id}/certificate`, {
+      method: "put",
+      body: {
+        status,
+        reason: certificateRejectReason.value,
+      },
+    });
+    certificateRejectReason.value = "";
+    closeModal();
+    await refresh();
+  } finally {
+    reviewingCertificate.value = false;
+  }
 }
 </script>
 
@@ -185,7 +232,32 @@ async function editAward() {
           {{ formatDateTimeText(row.original.date) }}
         </template>
         <template #status-cell="{ row }">
-          {{ t(`status.${row.original.status}`) }}
+          <div class="flex flex-wrap items-center gap-1">
+            <UBadge :color="statusColor(row.original.status)" variant="outline">
+              {{ t(`status.${row.original.status}`) }}
+            </UBadge>
+            <UBadge
+              v-if="row.original.certificateStatus === 'pending'"
+              color="warning"
+              variant="subtle"
+            >
+              证书待审
+            </UBadge>
+            <UBadge
+              v-else-if="row.original.certificateStatus === 'rejected'"
+              color="error"
+              variant="subtle"
+            >
+              证书被拒
+            </UBadge>
+            <UBadge
+              v-else-if="row.original.certificateStatus === 'approved'"
+              color="success"
+              variant="subtle"
+            >
+              证书已通过
+            </UBadge>
+          </div>
         </template>
         <template #updatedAt-cell="{ row }">
           {{ formatDateTimeText(row.original.updatedAt) }}
@@ -260,10 +332,50 @@ async function editAward() {
         <UFormField label="附件" name="evidences">
           <EvidencePreview :evidences="currentAward.evidences || []" />
         </UFormField>
+
+        <template v-if="currentAward.certificateStatus === 'pending'">
+          <UFormField label="待审证书日期" name="certificateDate">
+            <UInput
+              :model-value="currentAward.certificateDate"
+              class="w-full"
+              type="date"
+              disabled
+            />
+          </UFormField>
+          <UFormField label="待审证书佐证" name="certificateEvidences">
+            <EvidencePreview :evidences="currentAward.certificateEvidences || []" />
+          </UFormField>
+          <UFormField label="拒绝理由" name="certificateRejectReason">
+            <UTextarea
+              v-model="certificateRejectReason"
+              class="w-full"
+              placeholder="拒绝补充证书时必填"
+            />
+          </UFormField>
+        </template>
       </UForm>
     </template>
     <template #footer>
-      <UButton @click="editAward">保存</UButton>
+      <div class="flex w-full justify-end gap-2">
+        <template v-if="currentAward.certificateStatus === 'pending'">
+          <UButton
+            color="error"
+            variant="outline"
+            :loading="reviewingCertificate"
+            @click="reviewCertificate('rejected')"
+          >
+            拒绝证书
+          </UButton>
+          <UButton
+            color="success"
+            :loading="reviewingCertificate"
+            @click="reviewCertificate('approved')"
+          >
+            通过证书
+          </UButton>
+        </template>
+        <UButton @click="editAward">保存</UButton>
+      </div>
     </template>
   </UModal>
 </template>

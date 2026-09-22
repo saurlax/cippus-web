@@ -46,6 +46,17 @@ type TableRecord = EditableRecord & {
 const selectedRecord = ref<EditableRecord>();
 const uploadFiles = ref<File[]>([]);
 const memberTags = ref<string[]>([]);
+const viewOnly = ref(false);
+const deleteTarget = ref<TableRecord>();
+const confirmDeleteOpen = ref(false);
+const certificateModalOpen = ref(false);
+const certificateTarget = ref<TableRecord>();
+const certificateUploadFiles = ref<File[]>([]);
+const savingCertificate = ref(false);
+const certificateForm = reactive({
+  date: "",
+  evidences: [] as string[],
+});
 const form = reactive({
   contestId: undefined as number | undefined,
   level: undefined as AwardLevel | undefined,
@@ -257,6 +268,7 @@ function reviewTimeline(item: any) {
 
 function resetForm() {
   selectedRecord.value = undefined;
+  viewOnly.value = false;
   uploadFiles.value = [];
   memberTags.value = defaultMembers();
   form.contestId = undefined;
@@ -277,17 +289,7 @@ function openCreateModal() {
   formModalOpen.value = true;
 }
 
-function editRecord(item: TableRecord) {
-  if (!isRecordOwner(item)) {
-    toast.add({ title: "成员无法修改成果", color: "warning" });
-    return;
-  }
-
-  if (item.status !== "draft") {
-    toast.add({ title: "只能编辑草稿状态的成果", color: "warning" });
-    return;
-  }
-
+function fillFormFromRecord(item: TableRecord) {
   formKind.value = item.achievementKind;
   selectedRecord.value = item;
   uploadFiles.value = [];
@@ -303,7 +305,35 @@ function editRecord(item: TableRecord) {
   memberTags.value = Array.isArray((item as any).members) && (item as any).members.length
     ? [...((item as any).members as string[])]
     : defaultMembers();
+}
+
+function editRecord(item: TableRecord) {
+  if (!isRecordOwner(item)) {
+    toast.add({ title: "成员无法修改成果", color: "warning" });
+    return;
+  }
+
+  if (item.status !== "draft") {
+    toast.add({ title: "只能编辑草稿状态的成果", color: "warning" });
+    return;
+  }
+
+  viewOnly.value = false;
+  fillFormFromRecord(item);
   formModalOpen.value = true;
+}
+
+function viewRecord(item: TableRecord) {
+  viewOnly.value = true;
+  fillFormFromRecord(item);
+  formModalOpen.value = true;
+}
+
+function onFormSubmit() {
+  if (viewOnly.value) {
+    return;
+  }
+  saveRecord("pending");
 }
 
 async function uploadEvidences(files: File[]) {
@@ -492,7 +522,7 @@ async function revertToDraft(item: TableRecord) {
   }
 }
 
-async function deleteRecord(item: TableRecord) {
+function requestDeleteRecord(item: TableRecord) {
   if (deletingId.value) return;
   if (!isRecordOwner(item)) {
     toast.add({ title: "成员无法修改成果", color: "warning" });
@@ -503,9 +533,14 @@ async function deleteRecord(item: TableRecord) {
     toast.add({ title: "只能删除草稿状态的成果", color: "warning" });
     return;
   }
-  if (!confirm("确定删除这条草稿成果吗？")) {
-    return;
-  }
+
+  deleteTarget.value = item;
+  confirmDeleteOpen.value = true;
+}
+
+async function confirmDeleteRecord() {
+  const item = deleteTarget.value;
+  if (!item || deletingId.value) return;
 
   try {
     deletingId.value = item.id;
@@ -513,6 +548,9 @@ async function deleteRecord(item: TableRecord) {
       method: "delete",
     });
     toast.add({ title: "草稿已删除", color: "success" });
+    confirmDeleteOpen.value = false;
+    deleteTarget.value = undefined;
+    formModalOpen.value = false;
     await refreshListByKind(item.achievementKind);
   } catch (e: any) {
     toast.add({
@@ -523,6 +561,82 @@ async function deleteRecord(item: TableRecord) {
     });
   } finally {
     deletingId.value = undefined;
+  }
+}
+
+function certificateStatusOf(item: TableRecord) {
+  return ((item as any).certificateStatus || "none") as
+    | "none"
+    | "pending"
+    | "approved"
+    | "rejected";
+}
+
+// 已通过审核、且尚未补充过（或被拒后允许重来）的成果，才可以补充证书。
+// 注意：首次申报时就填过证书日期的，不再显示补充入口。
+function canSupplementCertificate(item: TableRecord) {
+  if (item.status !== "approved") {
+    return false;
+  }
+
+  const status = certificateStatusOf(item);
+  if (status === "rejected") {
+    return true;
+  }
+  if (status !== "none") {
+    return false;
+  }
+
+  return !(item as any).certificateDate;
+}
+
+function openCertificateModal(item: TableRecord) {
+  certificateTarget.value = item;
+  certificateForm.date = normalizeDateText((item as any).certificateDate);
+  certificateForm.evidences = [...((item as any).certificateEvidences || [])];
+  certificateUploadFiles.value = [];
+  certificateModalOpen.value = true;
+}
+
+function removeCertificateEvidence(index: number) {
+  certificateForm.evidences.splice(index, 1);
+}
+
+async function saveCertificate() {
+  const item = certificateTarget.value;
+  if (!item || savingCertificate.value) return;
+
+  if (!certificateForm.date) {
+    toast.add({ title: "请选择证书日期", color: "warning" });
+    return;
+  }
+
+  try {
+    savingCertificate.value = true;
+    const uploaded = await uploadEvidences(certificateUploadFiles.value);
+    await $fetch(
+      `/api/users/${username.value}/${pathForRecordKind(item.achievementKind)}/${item.id}/certificate`,
+      {
+        method: "post",
+        body: {
+          certificateDate: certificateForm.date,
+          certificateEvidences: [...certificateForm.evidences, ...uploaded],
+        },
+      },
+    );
+    toast.add({ title: "证书材料已提交，等待审核", color: "success" });
+    certificateModalOpen.value = false;
+    certificateTarget.value = undefined;
+    await refreshListByKind(item.achievementKind);
+  } catch (e: any) {
+    toast.add({
+      title: "提交失败",
+      description: e?.data?.message || e?.message,
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    savingCertificate.value = false;
   }
 }
 
@@ -538,8 +652,6 @@ function pathForRecordKind(kind: AchievementKind) {
       return "innovations";
   }
 }
-
-watch(formKind, () => resetForm());
 </script>
 
 <template>
@@ -577,6 +689,14 @@ watch(formKind, () => resetForm());
           <template #actions-cell="{ row }">
             <div class="flex gap-1">
               <UButton
+                size="sm"
+                variant="ghost"
+                color="neutral"
+                icon="i-lucide-eye"
+                label="查看"
+                @click="viewRecord(row.original)"
+              />
+              <UButton
                 v-if="isRecordOwner(row.original) && row.original.status === 'draft'"
                 size="sm"
                 variant="ghost"
@@ -593,7 +713,7 @@ watch(formKind, () => resetForm());
                 icon="i-lucide-trash-2"
                 label="删除"
                 :loading="deletingId === row.original.id"
-                @click="deleteRecord(row.original)"
+                @click="requestDeleteRecord(row.original)"
               />
               <UButton
                 v-if="isRecordOwner(row.original) && row.original.status === 'pending'"
@@ -605,6 +725,27 @@ watch(formKind, () => resetForm());
                 :loading="revertingId === row.original.id"
                 @click="revertToDraft(row.original)"
               />
+              <UButton
+                v-if="canSupplementCertificate(row.original)"
+                size="sm"
+                variant="ghost"
+                color="primary"
+                icon="i-lucide-file-plus"
+                :label="
+                  certificateStatusOf(row.original) === 'rejected'
+                    ? '重新补充证书'
+                    : '补充证书'
+                "
+                @click="openCertificateModal(row.original)"
+              />
+              <UBadge
+                v-if="certificateStatusOf(row.original) === 'pending'"
+                color="warning"
+                variant="outline"
+                size="sm"
+              >
+                证书待审
+              </UBadge>
               <span v-if="!isRecordOwner(row.original)" class="text-sm text-muted">
                 成员无法修改成果
               </span>
@@ -616,53 +757,88 @@ watch(formKind, () => resetForm());
 
       <UModal
         v-model:open="formModalOpen"
-        :title="`${selectedRecord ? '编辑' : '添加'}成果`"
+        :title="viewOnly ? '查看成果' : selectedRecord ? '编辑成果' : '添加成果'"
       >
         <template #body>
-          <UForm class="space-y-4" @submit.prevent="saveRecord('pending')">
+          <UForm class="space-y-4" @submit.prevent="onFormSubmit">
             <UFormField v-if="!selectedRecord" label="成果类型" name="achievementType" required>
-              <USelect v-model="formKind" :items="kindItems" class="w-full" />
+              <USelect
+                v-model="formKind"
+                :items="kindItems"
+                class="w-full"
+                @update:model-value="resetForm"
+              />
             </UFormField>
-            <template v-if="formKind === 'award'">
-              <UFormField label="比赛" name="contestId" required>
-                <USelect v-model="form.contestId" :items="contestItems" class="w-full" />
-              </UFormField>
-              <UFormField label="级别" name="level" required>
-                <USelect v-model="form.level" :items="awardLevelItems" class="w-full" />
-              </UFormField>
-            </template>
-            <template v-if="formKind !== 'award'">
-              <UFormField label="名称" name="name" required>
-                <UInput v-model="form.name" class="w-full" />
-              </UFormField>
-            </template>
-            <UFormField label="类型" name="type" required>
-              <USelect v-model="form.type" :items="currentTypeItems" class="w-full" />
-            </UFormField>
-            <template v-if="formKind === 'innovation'">
-              <UFormField label="成果类型" name="sourceType" required>
+            <fieldset :disabled="viewOnly" class="m-0 min-w-0 space-y-4 border-0 p-0">
+              <template v-if="formKind === 'award'">
+                <UFormField label="比赛" name="contestId" required>
+                  <USelect
+                    v-model="form.contestId"
+                    :items="contestItems"
+                    class="w-full"
+                    :disabled="viewOnly"
+                  />
+                </UFormField>
+                <UFormField label="级别" name="level" required>
+                  <USelect
+                    v-model="form.level"
+                    :items="awardLevelItems"
+                    class="w-full"
+                    :disabled="viewOnly"
+                  />
+                </UFormField>
+              </template>
+              <template v-if="formKind !== 'award'">
+                <UFormField label="名称" name="name" required>
+                  <UInput v-model="form.name" class="w-full" :disabled="viewOnly" />
+                </UFormField>
+              </template>
+              <UFormField label="类型" name="type" required>
                 <USelect
-                  v-model="form.sourceType"
-                  :items="sourceTypeItems"
+                  v-model="form.type"
+                  :items="currentTypeItems"
                   class="w-full"
-                  @update:model-value="form.sourceId = undefined"
+                  :disabled="viewOnly"
                 />
               </UFormField>
-              <UFormField label="具体成果" name="sourceId" required>
-                <USelect v-model="form.sourceId" :items="sourceItems" class="w-full" />
+              <template v-if="formKind === 'innovation'">
+                <UFormField label="成果类型" name="sourceType" required>
+                  <USelect
+                    v-model="form.sourceType"
+                    :items="sourceTypeItems"
+                    class="w-full"
+                    :disabled="viewOnly"
+                    @update:model-value="form.sourceId = undefined"
+                  />
+                </UFormField>
+                <UFormField label="具体成果" name="sourceId" required>
+                  <USelect
+                    v-model="form.sourceId"
+                    :items="sourceItems"
+                    class="w-full"
+                    :disabled="viewOnly"
+                  />
+                </UFormField>
+              </template>
+              <UFormField label="获奖时间" name="date" required>
+                <UInput v-model="form.date" class="w-full" type="date" :disabled="viewOnly" />
               </UFormField>
-            </template>
-            <UFormField label="获奖时间" name="date" required>
-              <UInput v-model="form.date" class="w-full" type="date" />
-            </UFormField>
-            <UFormField label="证书时间" name="certificateDate">
-              <UInput v-model="form.certificateDate" class="w-full" type="date" />
-            </UFormField>
-            <UFormField label="成员排序（输入学号后点击回车保存）" name="members">
-              <UInputTags v-model="memberTags" class="w-full" />
-            </UFormField>
+              <UFormField label="证书时间（可选，若填则需同时上传证书，若暂无可日后补充提交）" name="certificateDate">
+                <UInput
+                  v-model="form.certificateDate"
+                  class="w-full"
+                  type="date"
+                  :disabled="viewOnly"
+                />
+              </UFormField>
+              <UFormField label="成员排序（输入学号后点击回车保存）" name="members">
+                <UInputTags v-model="memberTags" class="w-full" :disabled="viewOnly" />
+              </UFormField>
+            </fieldset>
             <UFormField label="佐证材料" name="evidences">
+              <EvidencePreview v-if="viewOnly" :evidences="form.evidences" />
               <EvidenceUpload
+                v-else
                 v-model="uploadFiles"
                 :evidences="form.evidences"
                 @remove-evidence="removeEvidence"
@@ -671,7 +847,23 @@ watch(formKind, () => resetForm());
           </UForm>
         </template>
         <template #footer>
-          <div class="flex w-full justify-end gap-2">
+          <div v-if="viewOnly" class="flex w-full justify-end gap-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              label="关闭"
+              @click="formModalOpen = false"
+            />
+            <UButton
+              color="error"
+              icon="i-lucide-trash-2"
+              label="删除"
+              :disabled="selectedRecord?.status !== 'draft'"
+              :loading="deletingId === selectedRecord?.id"
+              @click="requestDeleteRecord(selectedRecord as TableRecord)"
+            />
+          </div>
+          <div v-else class="flex w-full justify-end gap-2">
             <UButton color="neutral" variant="ghost" label="清空" @click="resetForm" />
             <UButton
               :loading="saving"
@@ -680,6 +872,62 @@ watch(formKind, () => resetForm());
               @click="saveRecord('draft')"
             />
             <UButton :loading="saving" label="保存并提交" @click="saveRecord('pending')" />
+          </div>
+        </template>
+      </UModal>
+
+      <UModal v-model:open="confirmDeleteOpen" title="确认删除">
+        <template #body>
+          <p class="text-sm text-muted">
+            确定要删除这条成果吗？删除后无法恢复。
+          </p>
+        </template>
+        <template #footer>
+          <div class="flex w-full justify-end gap-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              label="取消"
+              @click="confirmDeleteOpen = false"
+            />
+            <UButton
+              color="error"
+              label="确认删除"
+              :loading="Boolean(deletingId)"
+              @click="confirmDeleteRecord"
+            />
+          </div>
+        </template>
+      </UModal>
+
+      <UModal v-model:open="certificateModalOpen" title="补充证书">
+        <template #body>
+          <UForm class="space-y-4" @submit.prevent="saveCertificate">
+            <UFormField label="证书日期" name="certificateDate" required>
+              <UInput v-model="certificateForm.date" class="w-full" type="date" />
+            </UFormField>
+            <UFormField label="证书佐证" name="certificateEvidences">
+              <EvidenceUpload
+                v-model="certificateUploadFiles"
+                :evidences="certificateForm.evidences"
+                @remove-evidence="removeCertificateEvidence"
+              />
+            </UFormField>
+          </UForm>
+        </template>
+        <template #footer>
+          <div class="flex w-full justify-end gap-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              label="取消"
+              @click="certificateModalOpen = false"
+            />
+            <UButton
+              :loading="savingCertificate"
+              label="提交审核"
+              @click="saveCertificate"
+            />
           </div>
         </template>
       </UModal>

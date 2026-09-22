@@ -1,15 +1,12 @@
 <script setup lang="ts">
+import { getInitialLetter } from "~/utils/pinyin-initial";
+
 const { data: contests } = await useFetch("/api/contests");
 const selectedLetter = ref("all");
 
-function getContestInitial(title: unknown) {
-  const first = String(title || "").trim().match(/[A-Za-z]/)?.[0];
-  return first ? first.toUpperCase() : "#";
-}
-
 const letterItems = computed(() => {
   const letters = Array.from(
-    new Set((contests.value || []).map((contest: any) => getContestInitial(contest.title))),
+    new Set((contests.value || []).map((contest: any) => getInitialLetter(contest.title))),
   ).sort((left, right) => {
     if (left === "#") return 1;
     if (right === "#") return -1;
@@ -28,7 +25,7 @@ const filteredContests = computed(() => {
   }
 
   return (contests.value || []).filter(
-    (contest: any) => getContestInitial(contest.title) === selectedLetter.value,
+    (contest: any) => getInitialLetter(contest.title) === selectedLetter.value,
   );
 });
 
