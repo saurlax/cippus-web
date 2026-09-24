@@ -29,6 +29,9 @@ const filteredContests = computed(() => {
   );
 });
 
+// 描述固定行数截断，避免长简介把卡片撑高；text-wrap 用于消除与 line-clamp 省略号的冲突
+const descriptionClamp = "line-clamp-4 text-wrap";
+
 const posts = computed(() => {
   return filteredContests.value.map((contest: any) => {
     return {
@@ -36,6 +39,7 @@ const posts = computed(() => {
       description: contest.description || "",
       date: contest.createdAt,
       to: `/contests/${contest.id}`,
+      ui: { description: descriptionClamp },
     };
   });
 });
@@ -55,7 +59,7 @@ const posts = computed(() => {
           @click="() => { selectedLetter = item.value }"
         />
       </UButtonGroup>
-      <UBlogPosts :posts />
+      <UBlogPosts v-spotlight :posts />
     </UPageBody>
   </UContainer>
 </template>

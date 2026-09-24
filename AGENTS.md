@@ -26,7 +26,7 @@
 ## 鉴权与会话
 
 - 登录态来自 `nuxt-auth-utils`。
-- 会话用户只假定包含 `id`、`username`、`name`、`admin`。
+- 会话用户只假定包含 `id`、`username`、`name`、`admin`，以及可能缺失的 `avatar`（展示头像时必须兜底）。
 - 普通鉴权使用 `await getUserSession(event)` 或 `await requireUserSession(event)`。
 - 管理端 API 必须放在 `server/api/admin/**`，由 `server/middleware/admin.ts` 统一限制管理员访问。
 - 公开 API 应默认只读。公告、竞赛、活动、用户等管理写操作不要放在公开命名空间。
@@ -58,3 +58,4 @@
 - 审核拒绝必须填写理由，并写入对应用户的站内信。
 - 已通过成果被拒绝时，需要从相关活动申报中移除并重新计算分数。
 - 大创成果必须关联可用的奖项、论文或专利，且同一来源不能被重复登记。
+- `users.authProvider` 为 `cas` 的账号由统一身份认证接管，其姓名以学校数据为准，用户端不可修改（服务端与页面都要拦截）。

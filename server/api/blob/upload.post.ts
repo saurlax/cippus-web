@@ -3,6 +3,12 @@ import { z } from "zod";
 
 const uploadSchema = z.object({
   username: z.string().trim().min(1),
+  // 未指定或取值异常时按原有的佐证材料路径处理，保持对既有调用方兼容
+  purpose: z
+    .enum(["evidence", "avatar"])
+    .nullish()
+    .catch("evidence")
+    .transform((value) => value ?? "evidence"),
 });
 
 function inferFileExtension(file: File) {
@@ -34,6 +40,7 @@ export default defineEventHandler(async (event) => {
   const form = await readFormData(event);
   const parsed = uploadSchema.parse({
     username: form.get("username"),
+    purpose: form.get("purpose"),
   });
 
   const file = form.get("file");
@@ -53,7 +60,11 @@ export default defineEventHandler(async (event) => {
 
   const year = new Date().getFullYear();
   const random = Math.random().toString(36).slice(2, 8);
-  const pathname = `evidence/${parsed.username}/${year}/${Date.now()}-${random}.${inferFileExtension(file)}`;
+  const filename = `${Date.now()}-${random}.${inferFileExtension(file)}`;
+  const pathname =
+    parsed.purpose === "avatar"
+      ? `avatar/${parsed.username}/${filename}`
+      : `evidence/${parsed.username}/${year}/${filename}`;
 
   const uploaded = await blob.put(pathname, file);
 

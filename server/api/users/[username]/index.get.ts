@@ -18,6 +18,8 @@ export default defineEventHandler(async (event) => {
       email: true,
       gender: true,
       college: true,
+      avatar: true,
+      authProvider: true,
       displayAchievements: true,
     },
   });

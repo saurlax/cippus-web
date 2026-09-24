@@ -174,6 +174,11 @@ export const users = pgTable("users", {
   email: text("email"),
   gender: text("gender", { enum: ["male", "female"] }),
   college: text("college"),
+  avatar: text("avatar"),
+  // 账号来源：cas 表示由统一身份认证建立并接管，其姓名由学校提供，用户端不可修改
+  authProvider: text("auth_provider", { enum: ["cas", "local"] })
+    .notNull()
+    .default("local"),
   displayAchievements: jsonb("display_achievements")
     .$type<Record<string, number[]>>()
     .notNull()

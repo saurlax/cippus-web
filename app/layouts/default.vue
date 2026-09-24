@@ -62,6 +62,10 @@ if (loggedIn.value) {
 
 const unreadCount = computed(() => notificationData.value?.unreadCount || 0);
 
+const avatarUrl = computed(() =>
+  user.value?.avatar ? `/images/${user.value.avatar}` : undefined,
+);
+
 // 路由切换时刷新（在站内信页标记已读后返回，红点会同步更新）
 watch(
   () => route.fullPath,
@@ -98,9 +102,11 @@ watch(
       <UDropdownMenu :items="userItems">
         <div>
           <UAvatar
-            v-if="loggedIn && user?.name"
+            v-if="loggedIn && (avatarUrl || user?.name)"
             class="cursor-pointer"
-            :text="user.name?.[0]"
+            :src="avatarUrl"
+            :alt="user?.name || user?.username"
+            :text="user?.name?.[0]"
           />
           <UAvatar v-else class="cursor-pointer" icon="i-lucide-user-round" />
         </div>

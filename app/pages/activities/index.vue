@@ -1,6 +1,9 @@
 <script setup lang="ts">
 const { data: activities } = await useFetch("/api/activities");
 
+// 描述固定行数截断，避免长活动简介把卡片撑高；text-wrap 用于消除与 line-clamp 省略号的冲突
+const descriptionClamp = "line-clamp-4 text-wrap";
+
 const posts = computed(() => {
   return activities.value?.map((activity: any) => {
     return {
@@ -8,6 +11,7 @@ const posts = computed(() => {
       description: activity.description || "",
       date: activity.startDate,
       to: `/activities/${activity.id}`,
+      ui: { description: descriptionClamp },
     };
   });
 });
@@ -17,7 +21,7 @@ const posts = computed(() => {
   <UContainer>
     <UPageHeader title="申报列表" />
     <UPageBody>
-      <UBlogPosts :posts />
+      <UBlogPosts v-spotlight :posts />
     </UPageBody>
   </UContainer>
 </template>

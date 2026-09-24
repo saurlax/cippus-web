@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
-const { user: sessionUser } = useUserSession();
+const { user: sessionUser, fetch: refreshSession } = useUserSession();
 const toast = useToast();
 const { t } = useI18n();
 
@@ -137,19 +137,45 @@ const approvedAwards = computed(() => awardsList.value.filter((item) => item.sta
 const approvedPapers = computed(() => papersList.value.filter((item) => item.status === "approved"));
 const approvedPatents = computed(() => patentsList.value.filter((item) => item.status === "approved"));
 const approvedInnovations = computed(() => innovationsList.value.filter((item) => item.status === "approved"));
-// 个人主页不展示已拒绝的成果
+// 个人主页严格跟随“展示设置”：只展示已勾选且已通过审核的成果，本人视图与访客一致
+const displayAchievementIds = computed(() => {
+  const display = user.value?.displayAchievements || {};
+
+  return {
+    award: new Set(display.award || []),
+    paper: new Set(display.paper || []),
+    patent: new Set(display.patent || []),
+    innovation: new Set(display.innovation || []),
+  };
+});
 const visibleAwardsList = computed(() =>
-  awardsList.value.filter((item) => item.status !== "rejected"),
+  awardsList.value.filter(
+    (item) =>
+      item.status === "approved" && displayAchievementIds.value.award.has(item.id),
+  ),
 );
 const visiblePapersList = computed(() =>
-  papersList.value.filter((item) => item.status !== "rejected"),
+  papersList.value.filter(
+    (item) =>
+      item.status === "approved" && displayAchievementIds.value.paper.has(item.id),
+  ),
 );
 const visiblePatentsList = computed(() =>
-  patentsList.value.filter((item) => item.status !== "rejected"),
+  patentsList.value.filter(
+    (item) =>
+      item.status === "approved" && displayAchievementIds.value.patent.has(item.id),
+  ),
 );
 const visibleInnovationsList = computed(() =>
-  innovationsList.value.filter((item) => item.status !== "rejected"),
+  innovationsList.value.filter(
+    (item) =>
+      item.status === "approved" &&
+      displayAchievementIds.value.innovation.has(item.id),
+  ),
 );
+
+type DisplayKind = keyof typeof displayForm;
+
 const claimedInnovationSourceKeys = computed(() => {
   const claimed = new Set<string>();
 
@@ -398,10 +424,19 @@ function startEdit() {
 
 function syncDisplayForm() {
   const displayAchievements = (user.value?.displayAchievements || {}) as Record<string, number[]>;
-  displayForm.award = [...(displayAchievements.award || [])];
-  displayForm.paper = [...(displayAchievements.paper || [])];
-  displayForm.patent = [...(displayAchievements.patent || [])];
-  displayForm.innovation = [...(displayAchievements.innovation || [])];
+  const displayableIds: Record<DisplayKind, Set<number>> = {
+    award: new Set(approvedAwards.value.map((item) => item.id)),
+    paper: new Set(approvedPapers.value.map((item) => item.id)),
+    patent: new Set(approvedPatents.value.map((item) => item.id)),
+    innovation: new Set(approvedInnovations.value.map((item) => item.id)),
+  };
+
+  // 记录被删除或审核回退后，历史勾选会失效，这里不再回填，保存时即被清理
+  for (const kind of Object.keys(displayForm) as DisplayKind[]) {
+    displayForm[kind] = (displayAchievements[kind] || []).filter((id) =>
+      displayableIds[kind].has(id),
+    );
+  }
 }
 
 function startDisplay() {
@@ -493,7 +528,7 @@ async function saveProfile() {
     await $fetch(`/api/users`, {
       method: "PUT",
       body: {
-        name: form.name,
+        ...(nameLocked.value ? {} : { name: form.name }),
         bio: form.bio,
         email: form.email,
         gender: form.gender,
@@ -502,6 +537,7 @@ async function saveProfile() {
       },
     });
 
+    await refreshSession();
     await refreshUser();
     openEdit.value = false;
     toast.add({
@@ -555,6 +591,81 @@ async function saveDisplay() {
     });
   } finally {
     savingDisplay.value = false;
+  }
+}
+
+const AVATAR_MAX_SIZE = 4 * 1024 * 1024;
+const avatarInput = ref<HTMLInputElement>();
+const uploadingAvatar = ref(false);
+
+const avatarUrl = computed(() =>
+  user.value?.avatar ? `/images/${user.value.avatar}` : undefined,
+);
+
+// 统一认证账号的姓名由学校提供，用户端只读
+const nameLocked = computed(() => user.value?.authProvider === "cas");
+
+function pickAvatar() {
+  if (!isSelf.value || uploadingAvatar.value) {
+    return;
+  }
+
+  avatarInput.value?.click();
+}
+
+async function onAvatarSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+
+  if (!file || !isSelf.value || uploadingAvatar.value) {
+    return;
+  }
+
+  if (!file.type.startsWith("image/")) {
+    toast.add({ title: "请选择图片文件", color: "warning" });
+    return;
+  }
+
+  if (file.size > AVATAR_MAX_SIZE) {
+    toast.add({ title: "头像不能超过 4MB", color: "warning" });
+    return;
+  }
+
+  try {
+    uploadingAvatar.value = true;
+    const formData = new FormData();
+    formData.append("username", username.value);
+    formData.append("purpose", "avatar");
+    formData.append("file", file);
+
+    const uploaded = await $fetch<{ pathname: string }>("/api/blob/upload", {
+      method: "post",
+      body: formData,
+    });
+
+    await $fetch("/api/users", {
+      method: "PUT",
+      body: { avatar: uploaded.pathname },
+    });
+
+    // 会话里也带着头像，刷新后导航栏才会同步
+    await refreshSession();
+    await refreshUser();
+    toast.add({
+      title: "头像已更新",
+      color: "success",
+      icon: "i-lucide-check",
+    });
+  } catch (e: any) {
+    toast.add({
+      title: "头像更新失败",
+      description: e?.data?.message || e?.message,
+      color: "error",
+      icon: "i-lucide-circle-alert",
+    });
+  } finally {
+    uploadingAvatar.value = false;
   }
 }
 
@@ -857,9 +968,31 @@ async function saveRecordDraft() {
   <UContainer v-if="user">
     <UPageHeader headline="用户" :description="user.college || ''">
       <template #title>
-        <div class="flex items-center gap-2">
-          <span>{{ user.name || user.username }}</span>
-          <UIcon :name="genderIcon.name" :class="genderIcon.class" />
+        <div class="flex items-center gap-3">
+          <div class="relative flex shrink-0">
+            <UAvatar
+              :src="avatarUrl"
+              :alt="user.name || user.username"
+              size="3xl"
+            />
+            <button
+              v-if="isSelf"
+              type="button"
+              class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity hover:opacity-100 focus-visible:opacity-100 disabled:cursor-wait"
+              :aria-label="uploadingAvatar ? '头像上传中' : '上传头像'"
+              :disabled="uploadingAvatar"
+              @click="pickAvatar"
+            >
+              <UIcon
+                :name="uploadingAvatar ? 'i-lucide-loader-circle' : 'i-lucide-camera'"
+                :class="['size-5', uploadingAvatar ? 'animate-spin' : '']"
+              />
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <span>{{ user.name || user.username }}</span>
+            <UIcon :name="genderIcon.name" :class="genderIcon.class" />
+          </div>
         </div>
       </template>
 
@@ -881,6 +1014,14 @@ async function saveRecordDraft() {
       </template>
     </UPageHeader>
 
+    <input
+      ref="avatarInput"
+      type="file"
+      accept="image/*"
+      class="hidden"
+      @change="onAvatarSelected"
+    />
+
     <UPage>
       <UPageBody>
         <UPageCard title="个人简介">
@@ -893,7 +1034,7 @@ async function saveRecordDraft() {
         </UPageCard>
 
         <UPageCard title="奖项">
-          <UPageGrid cols="1 sm:2 md:3" gap="4" class="mt-4">
+          <UPageGrid v-spotlight cols="1 sm:2 md:3" gap="4" class="mt-4">
             <UPageCard
               v-for="award in visibleAwardsList"
               :key="award.id"
@@ -944,14 +1085,14 @@ async function saveRecordDraft() {
             </UPageCard>
           </UPageGrid>
           <UEmpty
-            v-if="!isSelf && !visibleAwardsList.length"
+            v-if="!visibleAwardsList.length"
             variant="naked"
             title="暂无奖项"
           />
         </UPageCard>
 
         <UPageCard title="论文">
-          <UPageGrid cols="1 sm:2 md:3" gap="4" class="mt-4">
+          <UPageGrid v-spotlight cols="1 sm:2 md:3" gap="4" class="mt-4">
             <UPageCard
               v-for="paper in visiblePapersList"
               :key="paper.id"
@@ -997,14 +1138,14 @@ async function saveRecordDraft() {
             </UPageCard>
           </UPageGrid>
           <UEmpty
-            v-if="!isSelf && !visiblePapersList.length"
+            v-if="!visiblePapersList.length"
             variant="naked"
             title="暂无论文"
           />
         </UPageCard>
 
         <UPageCard title="专利">
-          <UPageGrid cols="1 sm:2 md:3" gap="4" class="mt-4">
+          <UPageGrid v-spotlight cols="1 sm:2 md:3" gap="4" class="mt-4">
             <UPageCard
               v-for="patent in visiblePatentsList"
               :key="patent.id"
@@ -1052,14 +1193,14 @@ async function saveRecordDraft() {
             </UPageCard>
           </UPageGrid>
           <UEmpty
-            v-if="!isSelf && !visiblePatentsList.length"
+            v-if="!visiblePatentsList.length"
             variant="naked"
             title="暂无专利"
           />
         </UPageCard>
 
         <UPageCard title="大创">
-          <UPageGrid cols="1 sm:2 md:3" gap="4" class="mt-4">
+          <UPageGrid v-spotlight cols="1 sm:2 md:3" gap="4" class="mt-4">
             <UPageCard
               v-for="innovation in visibleInnovationsList"
               :key="innovation.id"
@@ -1113,7 +1254,7 @@ async function saveRecordDraft() {
             </UPageCard>
           </UPageGrid>
           <UEmpty
-            v-if="!isSelf && !visibleInnovationsList.length"
+            v-if="!visibleInnovationsList.length"
             variant="naked"
             title="暂无大创"
           />
@@ -1124,8 +1265,12 @@ async function saveRecordDraft() {
     <UModal v-model:open="openEdit" title="编辑资料">
       <template #body>
         <UForm class="space-y-4" @submit.prevent="saveProfile">
-          <UFormField label="姓名" name="name">
-            <UInput v-model="form.name" class="w-full" />
+          <UFormField
+            label="姓名"
+            name="name"
+            :description="nameLocked ? '由学校统一身份认证提供，不能修改' : undefined"
+          >
+            <UInput v-model="form.name" class="w-full" :disabled="nameLocked" />
           </UFormField>
           <UFormField label="简介" name="bio">
             <UTextarea v-model="form.bio" class="w-full" :rows="4" />
@@ -1174,7 +1319,7 @@ async function saveRecordDraft() {
             color="neutral"
             variant="subtle"
             title="只展示已审核通过的成就"
-            description="被勾选的内容会出现在公开资料卡片中，其他人可以通过搜索用户名访问。"
+            description="只有已通过审核的成果可以勾选；被勾选的内容会出现在公开资料卡片中，其他人可以通过搜索用户名访问。本人看到的内容与访客一致，记录被删除或审核回退后失效的勾选会在下次保存时自动清理。"
           />
 
           <section class="space-y-3">
